@@ -1,0 +1,6 @@
+
+https://towardsdatascience.com/sql-on-the-cloud-with-python-c08a30807661
+
+https://www.techonthenet.com/mysql/grant_revoke.php
+https://phoenixnap.com/kb/how-to-create-new-mysql-user-account-grant-privileges
+
