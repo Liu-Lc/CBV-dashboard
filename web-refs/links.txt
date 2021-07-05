@@ -1,11 +1,15 @@
 
+Setting Google Cloud MySQL and Python
 https://towardsdatascience.com/sql-on-the-cloud-with-python-c08a30807661
 
+Managing user privileges in MySQL
 https://www.techonthenet.com/mysql/grant_revoke.php
 https://phoenixnap.com/kb/how-to-create-new-mysql-user-account-grant-privileges
 
+List stored procedures in database
 https://www.mysqltutorial.org/listing-stored-procedures-in-mysql-database.aspx
 
 
+Structuring webpage with Dash Plotly
 https://dash.plotly.com/urls
 
