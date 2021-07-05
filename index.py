@@ -16,7 +16,6 @@ from dash.dependencies import Input, Output, State
 
 import otros.keys as keys
 from app import app
-# from apps import app1
 
 
 app.layout = html.Div(className='mainContainer', children=[
@@ -74,17 +73,6 @@ app.layout = html.Div(className='mainContainer', children=[
         ])
     ]),
 ])
-
-
-# @app.callback(
-#     Output('page-content', 'children'),
-#     Input('url', 'pathname')
-# )
-# def display_page(pathname):
-#     if pathname == '/apps/app1':
-#         return app1.layout
-#     else:
-#         return '404'
 
 
 if __name__ == '__main__':
