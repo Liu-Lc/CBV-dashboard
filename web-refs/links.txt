@@ -13,3 +13,6 @@ https://www.mysqltutorial.org/listing-stored-procedures-in-mysql-database.aspx
 Structuring webpage with Dash Plotly
 https://dash.plotly.com/urls
 
+
+How to organize items in a container with flex in CSS
+https://css-tricks.com/snippets/css/a-guide-to-flexbox/
