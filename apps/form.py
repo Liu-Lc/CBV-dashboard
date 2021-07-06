@@ -128,6 +128,29 @@ form_add =  html.Div(className='container', children=[
                 ]),
             ])
 
+tabs =  dcc.Tabs(
+            id="tabs-with-classes",
+            value='tab-1',
+            parent_className='tabs-container',
+            className='tabs',
+            children=[
+                dcc.Tab(
+                    label='Formulario',
+                    value='tab-1',
+                    className='tab',
+                    selected_className='tab-selected',
+                    children=[form]
+                ),
+                dcc.Tab(
+                    label='Agregar',
+                    value='tab-2',
+                    className='tab',
+                    selected_className='tab-selected',
+                    children=[form_add]
+                ),
+            ]
+        )
+
 
 @app.callback(
     Output('table-buscar', 'data'),
