@@ -9,6 +9,10 @@ Created on Sunday, ‎July ‎6, ‎2021, ‏‎08:32
 
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table as table
+import pandas as pd
+from app import app
+from dash.dependencies import Input, Output, State
 
 
 header = html.Div([html.Link(rel="stylesheet",
@@ -19,30 +23,26 @@ header = html.Div([html.Link(rel="stylesheet",
     ]),
 ])
 
-form =  html.Div(className='pretty-container', children=[
+form =  html.Div(className='container', children=[
             html.Div(className='one-third column', children=[
                 html.Div(className='row', children=[
-                    html.Span('No.'),
-                    dcc.Input(),
-                ]),
-                html.Div(className='row', children=[
-                    html.Span('Apellidos'),
+                    html.Span('Apellidos', className='label'),
                     html.Div(className='auto-column', children=[
                         dcc.Input(),
                         dcc.Input(),
                     ])
                 ]),
                 html.Div(className='row', children=[
-                    html.Span('Nombre'),
+                    html.Span('Nombre', className='label'),
                     dcc.Input(),
                 ]),
                 html.Div(className='row', children=[
-                    html.Span('Cédula'),
+                    html.Span('Cédula', className='label'),
                     dcc.Input(),
                 ]),
                 html.Div(className='row', children=[
-                    html.Span('Fecha de nacimiento'),
-                    dcc.Input(),
+                    html.Span('Fecha de nacimiento', className='label'),
+                    dcc.DatePickerSingle(className='input-style'),
                 ]),
                 html.P('', className='spacer'),
                 dcc.RadioItems(className='radio-items', id='search-type',
@@ -52,10 +52,10 @@ form =  html.Div(className='pretty-container', children=[
                         {'value':'exacta', 'label':'Exacta'},
                     ], value='precisa'
                 ),
-                html.Button('BUSCAR', className='large-button'),
+                html.Button('BUSCAR', id='button-buscar', className='large-button'),
             ]),
             html.Div(className='two-thirds column table', children=[
-                table.DataTable(
+                table.DataTable(id='table-buscar',
                     columns=[
                         {'id':'apellido', 'name':'Apellido'},
                         {'id':'nombre', 'name':'Nombre'},
@@ -63,44 +63,39 @@ form =  html.Div(className='pretty-container', children=[
                         {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
                         {'id':'number', 'name':'No.'},
                     ]
-                )
-            ])
+                ),
+                html.Div(className='row', children=[
+                    html.Button('LIMPIAR', id='button-limpiar1', className='large-button'),
+                    html.Button('MODIFICAR', id='button-modificar1', className='large-button'),
+                    html.Button('ELIMINAR', id='button-eliminar1', className='large-button'),
+                ]),
+            ]),
         ])
 
-form_add =  html.Div(className='pretty-container', children=[
+form_add =  html.Div(className='container', children=[
                 html.Div(className='one-third column', children=[
                     html.Div(className='row', children=[
-                        html.Span('No.'),
+                        html.Span('No.', className='label'),
                         dcc.Input(),
                     ]),
                     html.Div(className='row', children=[
-                        html.Span('Apellidos'),
-                        html.Div(className='auto-column', children=[
-                            dcc.Input(),
-                            dcc.Input(),
-                        ])
-                    ]),
-                    html.Div(className='row', children=[
-                        html.Span('Nombre'),
+                        html.Span('Apellidos', className='label'),
                         dcc.Input(),
                     ]),
                     html.Div(className='row', children=[
-                        html.Span('Cédula'),
+                        html.Span('Nombre', className='label'),
+                        dcc.Input(),
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Cédula', className='label'),
                         dcc.Input(),
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Fecha de nacimiento'),
-                        dcc.Input(),
+                        dcc.DatePickerSingle(),
                     ]),
                     html.P('', className='spacer'),
-                    dcc.RadioItems(className='radio-items', id='search-type',
-                        options=[
-                            {'value':'ambigua', 'label':'Ambigua'},
-                            {'value':'precisa', 'label':'Precisa'},
-                            {'value':'exacta', 'label':'Exacta'},
-                        ], value='precisa'
-                    ),
-                    html.Button('BUSCAR', className='large-button'),
+                    html.Button('AGREGAR', id='button-agregar', className='large-button'),
                 ]),
                 html.Div(className='two-thirds column table', children=[
                     table.DataTable(
@@ -111,6 +106,19 @@ form_add =  html.Div(className='pretty-container', children=[
                             {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
                             {'id':'number', 'name':'No.'},
                         ]
-                    )
+                    ),
+                    html.Div(className='row', children=[
+                        html.Button('LIMPIAR', id='button-limpiar2', className='large-button'),
+                        html.Button('MODIFICAR', id='button-modificar2', className='large-button'),
+                        html.Button('ELIMINAR', id='button-eliminar2', className='large-button'),
+                    ]),
                 ])
             ])
+
+
+@app.callback(
+    Output('table-buscar', 'data'),
+    [Input('button-buscar', 'n_clicks')]
+)
+def button_buscar_click(nclick):
+    return {}
