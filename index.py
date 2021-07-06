@@ -7,6 +7,7 @@ Created on Sunday, ‎July ‎4, ‎2021, ‏‎19:39
 """
 
 
+import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import mysql.connector
@@ -20,39 +21,42 @@ from apps import form
 
 app.layout = html.Div(className='mainContainer', children=[
     form.header,
-    html.Button(className='config-button', children=[
-        html.I(className='fa fa-cogs')
+    html.Div([
+        html.Div(id='side-panel', className='side-panel', children=[
+            html.Button(id='close-button', className='close-button', children=[
+                html.I(className='fa fa-close')
+            ]),
+            dcc.Location(id='url'),
+            html.Br(),
+            dcc.Link('Formulario', href='/'),
+            html.Br(),
+            dcc.Link('Ver', href='/ver'),
+            html.Br(),
+            dcc.Link('Conexión', href='/conexion'),
+            html.Br(),
+            dcc.Link('Configuración avanzada', href='/config'),
+        ]),
+        html.Button(id='config-button', className='config-button', children=[
+            html.I(className='fa fa-cogs')
+        ]),
     ]),
-    dcc.Tabs(
-        id="tabs-with-classes",
-        value='tab-1',
-        parent_className='tabs-container',
-        className='tabs',
-        children=[
-            dcc.Tab(
-                label='Formulario',
-                value='tab-1',
-                className='tab',
-                selected_className='tab-selected',
-                children=[form.form]
-            ),
-            dcc.Tab(
-                label='Agregar',
-                value='tab-2',
-                className='tab',
-                selected_className='tab-selected',
-                children=[form.form_add]
-            ),
-        ]
-    ),
+    html.Div(id='content-page', children=[form.tabs]),
 ])
 
 
-# @app.callback(
-#     Output(''),
-#     [Input('button-agregar', 'n_clicks')]
-# )
+@app.callback(
+    Output('side-panel', 'style'),
+    Input('config-button', 'n_clicks'),
+    Input('close-button', 'n_clicks')
+)
+def config_button_click(open_click, close_click):
+    button = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    if button=='config-button':
+        return {'width': '250px'}
+    elif button=='close-button':
+        return {'width': '0px'}
+    else: return {'width': '0px'}
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host='0.0.0.0', debug=True)

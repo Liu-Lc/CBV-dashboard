@@ -25,14 +25,6 @@
   min-width: 150px;
 }
 
-.config-button {
-  height: 35px;
-  width: 35px;
-  position: absolute;
-  z-index: 1;
-  cursor: pointer;
-}
-
 .tabs {
   width: 40%;
   min-width: 200px;
@@ -138,6 +130,57 @@
   height: 50px;
   width: 200px;
   cursor: pointer;
+}
+
+/* The sidepanel menu */
+.side-panel {
+  height: 300px; /* Specify a height */
+  position: fixed; /* Stay in place */
+  z-index: 2; /* Stay on top */
+  right: 0;
+  background-color: #111; /* Black*/
+  overflow-x: hidden; /* Disable horizontal scroll */
+  padding-top: 45px; /* Place content 60px from the top */
+  transition: 0.5s; /* 0.5 second transition effect to slide in the sidepanel */
+}
+/* The sidepanel links */
+.side-panel a {
+  padding: 8px 8px 8px 32px;
+  text-decoration: none;
+  font-size: 20px;
+  color: #bbbbbb;
+  display: block;
+  transition: 0.3s;
+}
+/* When you mouse over the navigation links, change their color */
+.side-panel a:hover {
+  color: #ffffff;
+}
+/* Position and style the close button (top right corner) */
+.side-panel .close-button {
+  padding: 3px;
+  position: absolute;
+  top: 0px;
+  right: 18px;
+  font-size: 25px;
+  cursor: pointer;
+}
+/* Style the button that is used to open the sidepanel */
+.config-button {
+  padding: 3px;
+  position: absolute;
+  right: 18px;
+  z-index: 1;
+  font-size: 25px;
+  cursor: pointer;
+}
+.config-button:hover, .side-panel .close-button:hover {
+  background-color: #FFFFFF;
+}
+
+.fa {
+  width: 29px;
+  height: 29px;
 }
 
 .one.column,

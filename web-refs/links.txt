@@ -16,3 +16,22 @@ https://dash.plotly.com/urls
 
 How to organize items in a container with flex in CSS
 https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+
+
+Creating a tabbed container
+https://dash.plotly.com/dash-core-components/tabs
+
+Date Picker input
+https://dash.plotly.com/dash-core-components/datepickersingle
+
+
+Font Awesone Icons cheatsheet
+https://fontawesome.com/v5/cheatsheet
+https://www.w3schools.com/howto/howto_css_icon_buttons.asp
+
+
+Create a collapsible side panel
+https://www.w3schools.com/howto/howto_js_collapse_sidepanel.asp
+
+Advanced callbacks for multiple input
+https://dash.plotly.com/advanced-callbacks
