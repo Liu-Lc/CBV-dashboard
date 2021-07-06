@@ -9,7 +9,6 @@ Created on Sunday, ‎July ‎4, ‎2021, ‏‎19:39
 
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table as table
 import mysql.connector
 import pandas as pd
 from dash.dependencies import Input, Output, State
@@ -24,21 +23,21 @@ app.layout = html.Div(className='mainContainer', children=[
     dcc.Tabs(
         id="tabs-with-classes",
         value='tab-1',
-        parent_className='custom-tabs',
-        className='custom-tabs-container',
+        parent_className='tabs-container',
+        className='tabs',
         children=[
             dcc.Tab(
                 label='Formulario',
                 value='tab-1',
-                className='custom-tab',
-                selected_className='custom-tab--selected',
+                className='tab',
+                selected_className='tab-selected',
                 children=[form.form]
             ),
             dcc.Tab(
                 label='Agregar',
                 value='tab-2',
-                className='custom-tab',
-                selected_className='custom-tab--selected',
+                className='tab',
+                selected_className='tab-selected',
                 children=[form.form_add]
             ),
         ]),
