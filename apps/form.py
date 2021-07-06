@@ -68,5 +68,49 @@ form =  html.Div(className='pretty-container', children=[
         ])
 
 form_add =  html.Div(className='pretty-container', children=[
-                
+                html.Div(className='one-third column', children=[
+                    html.Div(className='row', children=[
+                        html.Span('No.'),
+                        dcc.Input(),
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Apellidos'),
+                        html.Div(className='auto-column', children=[
+                            dcc.Input(),
+                            dcc.Input(),
+                        ])
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Nombre'),
+                        dcc.Input(),
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Cédula'),
+                        dcc.Input(),
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Fecha de nacimiento'),
+                        dcc.Input(),
+                    ]),
+                    html.P('', className='spacer'),
+                    dcc.RadioItems(className='radio-items', id='search-type',
+                        options=[
+                            {'value':'ambigua', 'label':'Ambigua'},
+                            {'value':'precisa', 'label':'Precisa'},
+                            {'value':'exacta', 'label':'Exacta'},
+                        ], value='precisa'
+                    ),
+                    html.Button('BUSCAR', className='large-button'),
+                ]),
+                html.Div(className='two-thirds column table', children=[
+                    table.DataTable(
+                        columns=[
+                            {'id':'apellido', 'name':'Apellido'},
+                            {'id':'nombre', 'name':'Nombre'},
+                            {'id':'cedula', 'name':'Cédula'},
+                            {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
+                            {'id':'number', 'name':'No.'},
+                        ]
+                    )
+                ])
             ])

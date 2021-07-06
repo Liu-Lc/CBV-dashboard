@@ -16,12 +16,11 @@ from dash.dependencies import Input, Output, State
 
 import otros.keys as keys
 from app import app
-from layout import header, form
-from apps import app1
+from apps import form
 
 
 app.layout = html.Div(className='mainContainer', children=[
-    header,
+    form.header,
     dcc.Tabs(
         id="tabs-with-classes",
         value='tab-1',
@@ -33,14 +32,14 @@ app.layout = html.Div(className='mainContainer', children=[
                 value='tab-1',
                 className='custom-tab',
                 selected_className='custom-tab--selected',
-                children=[form]
+                children=[form.form]
             ),
             dcc.Tab(
                 label='Agregar',
                 value='tab-2',
                 className='custom-tab',
                 selected_className='custom-tab--selected',
-                children=[app1.layout]
+                children=[form.form_add]
             ),
         ]),
 ])
