@@ -10,8 +10,7 @@
 }
 
 .container {
-  display: flex;
-  flex-direction: row;
+  margin: 10px;
   padding: 10px;
 }
 
@@ -24,6 +23,14 @@
   position: relative;
   box-shadow: 2px 2px 2px lightgrey;
   min-width: 150px;
+}
+
+.config-button {
+  height: 35px;
+  width: 35px;
+  position: absolute;
+  z-index: 1;
+  cursor: pointer;
 }
 
 .tabs {
@@ -59,12 +66,22 @@
   border-top: 4px solid #0b77dd !important;
 }
 
-Input, .input-style {
+.input-style {
   margin: 5px;
   font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
   text-align: center;
   font-size: 15px;
   height: min-content;
+}
+
+.DateInput_input {
+  font-size: 15px;
+  font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+  padding: 1px 4px;
+  height: min-content;
+}
+.SingleDatePickerInput_clearDate {
+  padding: 0px 4px 5px;
 }
 
 .label {
@@ -106,13 +123,21 @@ Input, .input-style {
   margin: 30px;
 }
 
+.button-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  padding: 10px;
+}
+
 .large-button {
   font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
   font-size: 20px;
   font-weight: 700;
   margin: 8px 0px;
   height: 50px;
-  width: 100%;
+  width: 200px;
+  cursor: pointer;
 }
 
 .one.column,

@@ -20,6 +20,9 @@ from apps import form
 
 app.layout = html.Div(className='mainContainer', children=[
     form.header,
+    html.Button(className='config-button', children=[
+        html.I(className='fa fa-cogs')
+    ]),
     dcc.Tabs(
         id="tabs-with-classes",
         value='tab-1',
@@ -40,7 +43,8 @@ app.layout = html.Div(className='mainContainer', children=[
                 selected_className='tab-selected',
                 children=[form.form_add]
             ),
-        ]),
+        ]
+    ),
 ])
 
 
