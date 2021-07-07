@@ -16,46 +16,56 @@ from dash.dependencies import Input, Output, State
 
 import otros.keys as keys
 from app import app
-from apps import form
+from apps import form, ver
 
 
 app.layout = html.Div(className='mainContainer', children=[
     form.header,
     html.Div([
-        html.Div(id='side-panel', className='side-panel', children=[
-            html.Button(id='close-button', className='close-button', children=[
-                html.I(className='fa fa-close')
-            ]),
-            dcc.Location(id='url'),
-            html.Br(),
-            dcc.Link('Formulario', href='/'),
-            html.Br(),
-            dcc.Link('Ver', href='/ver'),
-            html.Br(),
-            dcc.Link('Conexión', href='/conexion'),
-            html.Br(),
-            dcc.Link('Configuración avanzada', href='/config'),
-        ]),
+        html.Div(id='side-panel', className='side-panel', 
+            children=[
+                html.Button(id='close-button', className='close-button', children=[
+                    html.I(className='fa fa-close')
+                ]),
+                dcc.Location(id='url'),
+                html.Br(),
+                dcc.Link('Formulario', href='/'),
+                html.Br(),
+                dcc.Link('Ver', href='/ver'),
+                html.Br(),
+                dcc.Link('Conexión', href='/conexion'),
+                html.Br(),
+                dcc.Link('Configuración avanzada', href='/config'),
+            ], style={'width': '0px'},
+        ),
         html.Button(id='config-button', className='config-button', children=[
             html.I(className='fa fa-cogs')
         ]),
     ]),
-    html.Div(id='content-page', children=[form.tabs]),
+    html.Div(id='content-page', children=[]),
 ])
 
 
 @app.callback(
     Output('side-panel', 'style'),
     Input('config-button', 'n_clicks'),
-    Input('close-button', 'n_clicks')
+    Input('close-button', 'n_clicks'),
+    Input('url', 'pathname')
 )
-def config_button_click(open_click, close_click):
+def config_button_click(open_click, close_click, path):
     button = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
     if button=='config-button':
         return {'width': '250px'}
-    elif button=='close-button':
-        return {'width': '0px'}
     else: return {'width': '0px'}
+
+@app.callback(
+    Output('content-page', 'children'),
+    Input('url', 'pathname')
+)
+def change_url(pathname):
+    if pathname=='/ver':
+        return ver.layout
+    else: return form.tabs
 
 
 if __name__ == '__main__':

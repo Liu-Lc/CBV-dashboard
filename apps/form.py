@@ -68,7 +68,9 @@ form =  html.Div(className='container', children=[
                             {'id':'cedula', 'name':'Cédula'},
                             {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
                             {'id':'number', 'name':'No.'},
-                        ]
+                        ],
+                        fixed_rows={'headers': True},
+                        style_table={'height': 350},
                     ),
                 ]),
             ]),
@@ -79,7 +81,6 @@ form =  html.Div(className='container', children=[
                 html.Button('ELIMINAR', id='button-eliminar1', className='large-button'),
             ])
         ])
-        
 
 form_add =  html.Div(className='container', children=[
                 html.Div(className='row', children=[
@@ -116,7 +117,9 @@ form_add =  html.Div(className='container', children=[
                                 {'id':'cedula', 'name':'Cédula'},
                                 {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
                                 {'id':'number', 'name':'No.'},
-                            ]
+                            ],
+                            fixed_rows={'headers': True},
+                            style_table={'height': 350},
                         ),
                     ]),
                 ]),
@@ -129,21 +132,22 @@ form_add =  html.Div(className='container', children=[
             ])
 
 tabs =  dcc.Tabs(
-            id="tabs-with-classes",
-            value='tab-1',
+            id="tabs-main",
+            value='form',
             parent_className='tabs-container',
             className='tabs',
+            content_className='tabs-content',
             children=[
                 dcc.Tab(
                     label='Formulario',
-                    value='tab-1',
+                    value='form',
                     className='tab',
                     selected_className='tab-selected',
                     children=[form]
                 ),
                 dcc.Tab(
                     label='Agregar',
-                    value='tab-2',
+                    value='agregar',
                     className='tab',
                     selected_className='tab-selected',
                     children=[form_add]
