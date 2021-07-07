@@ -16,19 +16,19 @@
 
 .pretty-container {
   display: flex;
-  border-radius: 5px;
+  border-radius: 10px;
   background-color: #F9F9F9;
   margin: 10px;
-  padding: 10px;
+  padding: 24px;
   position: relative;
-  box-shadow: 2px 2px 2px lightgrey;
+  box-shadow: 2px 2px 8px lightgray;
   min-width: 150px;
 }
 
 .tabs {
   width: 40%;
   min-width: 200px;
-  height: 35px;
+  height: 40px;
 }
 .tabs-container {
   border-bottom-left-radius: 10px;
@@ -36,6 +36,24 @@
   background-color: #F9F9F9;
   margin: 10px;
   box-shadow: 2px 2px 8px lightgray;
+}
+.tabs-container-no-shadow {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  background-color: #F9F9F9;
+  margin: 10px 10px 0px;
+}
+.tabs-unique-container {
+  border-top: 1px solid lightgray;
+  margin: 0px 10px 10px;
+  padding: 24px;
+  background-color: #F9F9F9;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  box-shadow: 2px 4px 4px lightgray;
+}
+.tabs-content {
+  border-top: 1px solid lightgray;
 }
 .tab {
   color:#586069;
@@ -100,6 +118,10 @@
 .table {
   margin-left: 25px !important;
   flex-grow: 1;
+}
+
+.dash-table-container {
+  z-index: 0 !important;
 }
 
 .radio-items {
