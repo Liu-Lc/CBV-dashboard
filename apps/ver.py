@@ -58,7 +58,9 @@ layout = html.Div(className='column', children=[
                             ],
                             fixed_rows={'headers': True},
                             # page_action='none',
-                            page_size=200,
+                            page_size=150,
+                            sort_action="native",
+                            sort_mode="multi",
                             style_table={'height': '400px', 'overflowY': 'auto'},
                             # style_header={'textAlign': 'center'},
                             style_cell_conditional=[
@@ -92,6 +94,8 @@ def display_options(tab):
         return [], True
     elif tab=='vacios':
         return [
+            {'label':'Apellido', 'value':'APELLIDO'}, 
+            {'label':'Nombre', 'value':'NOMBRE'}, 
             {'label':'Cédula', 'value':'CEDULA'}, 
             {'label':'Fecha de Nacimiento', 'value':'FECHA_NAC'},
             {'label':'Expediente', 'value':'NO'}
@@ -118,9 +122,10 @@ def display_results(option, tab):
     conn = mysql.connector.connect(**keys.config)
     cursor = conn.cursor()
     if tab=='todos':
-        query = '''select * from clinica order by ID desc limit 1000; '''
+        query = '''select * from clinica order by ID desc; '''
     elif tab=='vacios' and option!=None:
-        query = '''select * from clinica where %s = ''; ''' % option
+        query = '''select * from clinica where %s = '' 
+                    order by APELLIDO, NOMBRE; ''' % option
     print(query)
     try:
         cursor.execute(query)
