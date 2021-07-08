@@ -10,9 +10,11 @@ Created on Sunday, ‎July ‎6, ‎2021, ‏‎08:32
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table as table
+import mysql.connector
 import pandas as pd
 from app import app
 from dash.dependencies import Input, Output, State
+from otros import keys
 
 
 header = html.Div([
@@ -32,21 +34,21 @@ form =  html.Div(className='container', children=[
                     html.Div(className='row', children=[
                         html.Span('Apellidos', className='label'),
                         html.Div(className='auto-column', children=[
-                            dcc.Input(className='input-style'),
-                            dcc.Input(className='input-style'),
+                            dcc.Input(id='f-apellido1', className='input-style'),
+                            dcc.Input(id='f-apellido2', className='input-style'),
                         ])
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Nombre', className='label'),
-                        dcc.Input(className='input-style'),
+                        dcc.Input(id='f-nombre', className='input-style'),
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Cédula', className='label'),
-                        dcc.Input(className='input-style'),
+                        dcc.Input(id='f-cedula', className='input-style'),
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Fecha de nacimiento', className='label'),
-                        dcc.DatePickerSingle(id='fechanac1', className='input-style',
+                        dcc.DatePickerSingle(id='f-fechanac', className='input-style',
                             clearable=True, 
                         ),
                     ]),
@@ -63,14 +65,27 @@ form =  html.Div(className='container', children=[
                 html.Div(className='two-thirds column table', children=[
                     table.DataTable(id='table-buscar',
                         columns=[
+                            {'id':'id', 'name':'id'},
                             {'id':'apellido', 'name':'Apellido'},
                             {'id':'nombre', 'name':'Nombre'},
                             {'id':'cedula', 'name':'Cédula'},
-                            {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
+                            {'id':'fechanac', 'name':'F. Nac.'},
                             {'id':'number', 'name':'No.'},
                         ],
                         fixed_rows={'headers': True},
-                        style_table={'height': 350},
+                        page_action='none',
+                        style_table={'height': '350px', 'overflowY': 'auto'},
+                        # style_header={'textAlign': 'center'},
+                        style_cell_conditional=[
+                            {'if': {'column_id': c},
+                                'width': '8%'} for c in ['id', 'number']
+                        ] + [
+                            {'if': {'column_id': 'cedula'},
+                                'width': '15%'},
+                            {'if': {'column_id': 'fechanac'},
+                                'width': '12%'} ,
+                        ],
+                        style_cell={'textAlign': 'center', 'min-width': '50px'},
                     ),
                 ]),
             ]),
@@ -110,7 +125,7 @@ form_add =  html.Div(className='container', children=[
                         html.P('', className='spacer'),
                     ]),
                     html.Div(className='two-thirds column table', children=[
-                        table.DataTable(
+                        table.DataTable(id='table-agregar', 
                             columns=[
                                 {'id':'apellido', 'name':'Apellido'},
                                 {'id':'nombre', 'name':'Nombre'},
@@ -119,7 +134,19 @@ form_add =  html.Div(className='container', children=[
                                 {'id':'number', 'name':'No.'},
                             ],
                             fixed_rows={'headers': True},
-                            style_table={'height': 350},
+                            page_action='none',
+                            style_table={'height': '350px', 'overflowY': 'auto'},
+                            # style_header={'textAlign': 'center'},
+                            style_cell_conditional=[
+                                {'if': {'column_id': c},
+                                    'width': '8%'} for c in ['id', 'number']
+                            ] + [
+                                {'if': {'column_id': 'cedula'},
+                                    'width': '15%'},
+                                {'if': {'column_id': 'fechanac'},
+                                    'width': '12%'} ,
+                            ],
+                            style_cell={'textAlign': 'center', 'min-width': '50px'},
                         ),
                     ]),
                 ]),
@@ -159,7 +186,35 @@ tabs =  dcc.Tabs(
 @app.callback(
     Output('table-buscar', 'data'),
     [Input('button-buscar', 'n_clicks')],
-    [State('search-option', 'value')]
+    [State('search-option', 'value'), State('f-apellido1', 'value'),
+    State('f-apellido2', 'value'), State('f-nombre', 'value'), 
+    State('f-cedula', 'value'), State('f-fechanac', 'value')]
 )
-def button_buscar_click(nclick, search_option):
-    return []
+def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
+    conn = mysql.connector.connect(**keys.config)
+    query = ''
+    print(search_option)
+    if search_option=='exacta':
+        q = []
+        q.append('select * from clinica ')
+        if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
+        if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
+        if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
+        if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
+        if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
+        query = q[0]
+        if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
+        query += '\norder by APELLIDO, NOMBRE; '
+        print(query)
+    
+    if query!='':
+        print('querying')
+        cursor = conn.cursor()
+        cursor.execute(query)
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return pd.DataFrame(results, 
+                columns=['id', 'apellido', 'nombre', 
+                    'cedula', 'fecha_nac', 'number']).to_dict('records')
+    else: return []

@@ -92,4 +92,4 @@ def display_value(value):
         return pd.DataFrame(results, 
             columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number']).to_dict('records')
-    else: return {}
+    else: return []
