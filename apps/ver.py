@@ -47,31 +47,31 @@ layout = html.Div(className='column', children=[
                     clearable=False, searchable=False),
                 dcc.Loading(
                     id='loading-table', type='default', children=[
-                table.DataTable(id='table-ver',
-                    columns=[
-                        {'id':'id', 'name':'id'},
-                        {'id':'apellido', 'name':'Apellido'},
-                        {'id':'nombre', 'name':'Nombre'},
-                        {'id':'cedula', 'name':'Cédula'},
-                        {'id':'fechanac', 'name':'F. Nac.'},
-                        {'id':'number', 'name':'No.'},
-                    ],
-                    fixed_rows={'headers': True},
+                        table.DataTable(id='table-ver',
+                            columns=[
+                                {'id':'id', 'name':'id'},
+                                {'id':'apellido', 'name':'Apellido'},
+                                {'id':'nombre', 'name':'Nombre'},
+                                {'id':'cedula', 'name':'Cédula'},
+                                {'id':'fechanac', 'name':'F. Nac.'},
+                                {'id':'number', 'name':'No.'},
+                            ],
+                            fixed_rows={'headers': True},
                             # page_action='none',
                             page_size=200,
-                    style_table={'height': '400px', 'overflowY': 'auto'},
-                    # style_header={'textAlign': 'center'},
-                    style_cell_conditional=[
-                        {'if': {'column_id': c},
-                            'width': '8%'} for c in ['id', 'number']
-                    ] + [
-                        {'if': {'column_id': 'cedula'},
-                            'width': '15%'},
-                        {'if': {'column_id': 'fechanac'},
-                            'width': '12%'} ,
-                    ],
-                    style_cell={'textAlign': 'center', 'min-width': '50px'},
-                ),
+                            style_table={'height': '400px', 'overflowY': 'auto'},
+                            # style_header={'textAlign': 'center'},
+                            style_cell_conditional=[
+                                {'if': {'column_id': c},
+                                    'width': '8%'} for c in ['id', 'number']
+                            ] + [
+                                {'if': {'column_id': 'cedula'},
+                                    'width': '15%'},
+                                {'if': {'column_id': 'fechanac'},
+                                    'width': '12%'} ,
+                            ],
+                            style_cell={'textAlign': 'center', 'min-width': '50px'},
+                        ),
                     ]
                 ),
                 html.Div(className='button-container', children=[
@@ -115,8 +115,8 @@ def display_options(tab):
 )
 def display_results(option, tab):
     results = []; query = ''
-        conn = mysql.connector.connect(**keys.config)
-        cursor = conn.cursor()
+    conn = mysql.connector.connect(**keys.config)
+    cursor = conn.cursor()
     if tab=='todos':
         query = '''select * from clinica order by ID desc limit 1000; '''
     elif tab=='vacios' and option!=None:
@@ -133,3 +133,4 @@ def display_results(option, tab):
                 'cedula', 'fecha_nac', 'number']).to_dict('records')
     except:
         return []
+    
