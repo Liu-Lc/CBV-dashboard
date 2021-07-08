@@ -84,6 +84,31 @@ layout = html.Div(className='column', children=[
 
 
 @app.callback(
+    Output('ver-option', 'options'), Output('ver-option', 'disabled'),
+    Input('tabs-ver', 'value')
+)
+def display_options(tab):
+    if tab=='todos':
+        return [], True
+    elif tab=='vacios':
+        return [
+            {'label':'Cédula', 'value':'CEDULA'}, 
+            {'label':'Fecha de Nacimiento', 'value':'FECHA_NAC'},
+            {'label':'Expediente', 'value':'NO'}
+        ], False
+    elif tab=='duplicados':
+        return [
+            {'label':'Apellido, Nombre y Cédula', 'value':'apnomced-dup'}, 
+            {'label':'Apellido y Nombre', 'value':'apnom-dup'},
+            {'label':'Cédula', 'value':'ced-dup'},
+            {'label':'Expendiente', 'value':'exp-dup'}
+        ], False
+    # elif tab=='verificar':
+    #     return [
+    #         {'label':'', 'value':''}, 
+    #     ], False
+
+@app.callback(
     Output('table-ver', 'data'),
     Input('tabs-ver', 'value')
 )
