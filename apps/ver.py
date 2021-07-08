@@ -36,13 +36,17 @@ layout = html.Div(className='column', children=[
                         label='Duplicados', value='duplicados',
                         className='tab', selected_className='tab-selected',
                     ),
-                    dcc.Tab(
-                        label='Verificar', value='verificar',
-                        className='tab', selected_className='tab-selected',
-                    ),
+                    # dcc.Tab(
+                    #     label='Verificar', value='verificar',
+                    #     className='tab', selected_className='tab-selected',
+                    # ),
                 ]
             ),
             html.Div(className='tabs-unique-container', children=[
+                dcc.Dropdown(id='ver-option', className='dropdown-style', 
+                    clearable=False, searchable=False),
+                dcc.Loading(
+                    id='loading-table', type='default', children=[
                 table.DataTable(id='table-ver',
                     columns=[
                         {'id':'id', 'name':'id'},
@@ -53,7 +57,8 @@ layout = html.Div(className='column', children=[
                         {'id':'number', 'name':'No.'},
                     ],
                     fixed_rows={'headers': True},
-                    page_action='none',
+                            # page_action='none',
+                            page_size=200,
                     style_table={'height': '400px', 'overflowY': 'auto'},
                     # style_header={'textAlign': 'center'},
                     style_cell_conditional=[
@@ -67,10 +72,12 @@ layout = html.Div(className='column', children=[
                     ],
                     style_cell={'textAlign': 'center', 'min-width': '50px'},
                 ),
+                    ]
+                ),
                 html.Div(className='button-container', children=[
                     html.Button('ACTUALIZAR', id='button-actualizar', className='large-button'),
-                    html.Button('LIMPIAR', id='button-modificar', className='large-button'),
-                    html.Button('MODIFICAR', id='button-eliminar', className='large-button'),
+                    html.Button('MODIFICAR', id='button-modificar', className='large-button'),
+                    html.Button('ELIMINAR', id='button-eliminar', className='large-button'),
                 ]),
             ]),
         ])
