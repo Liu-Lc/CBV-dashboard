@@ -110,18 +110,26 @@ def display_options(tab):
 
 @app.callback(
     Output('table-ver', 'data'),
+    Input('ver-option', 'value'),
     Input('tabs-ver', 'value')
 )
-def display_value(value):
-    if value=='todos':
+def display_results(option, tab):
+    results = []; query = ''
         conn = mysql.connector.connect(**keys.config)
-        query = '''select * from clinica order by NO desc limit 100; '''
         cursor = conn.cursor()
+    if tab=='todos':
+        query = '''select * from clinica order by ID desc limit 1000; '''
+    elif tab=='vacios' and option!=None:
+        query = '''select * from clinica where %s = ''; ''' % option
+    print(query)
+    try:
         cursor.execute(query)
         results = cursor.fetchall()
         cursor.close()
         conn.close()
+        print('done', len(results))
         return pd.DataFrame(results, 
             columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number']).to_dict('records')
-    else: return []
+    except:
+        return []
