@@ -73,8 +73,9 @@ form =  html.Div(className='container', children=[
                             {'id':'number', 'name':'No.'},
                         ],
                         fixed_rows={'headers': True},
-                        page_action='none',
-                        style_table={'height': '350px', 'overflowY': 'auto'},
+                        # page_action='none',
+                        page_size=200,
+                        style_table={'height': '400px', 'overflowY': 'auto'},
                         # style_header={'textAlign': 'center'},
                         style_cell_conditional=[
                             {'if': {'column_id': c},
@@ -124,6 +125,7 @@ form_add =  html.Div(className='container', children=[
                         ]),
                         html.P('', className='spacer'),
                     ]),
+                    ## Data Table
                     html.Div(className='two-thirds column table', children=[
                         table.DataTable(id='table-agregar', 
                             columns=[
@@ -134,8 +136,9 @@ form_add =  html.Div(className='container', children=[
                                 {'id':'number', 'name':'No.'},
                             ],
                             fixed_rows={'headers': True},
-                            page_action='none',
-                            style_table={'height': '350px', 'overflowY': 'auto'},
+                            # page_action='none',
+                            page_size=200,
+                            style_table={'height': '400px', 'overflowY': 'auto'},
                             # style_header={'textAlign': 'center'},
                             style_cell_conditional=[
                                 {'if': {'column_id': c},
@@ -193,7 +196,6 @@ tabs =  dcc.Tabs(
 def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
     conn = mysql.connector.connect(**keys.config)
     query = ''
-    print(search_option)
     if search_option=='exacta':
         q = []
         q.append('select * from clinica ')
@@ -205,10 +207,8 @@ def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
         query = q[0]
         if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
         query += '\norder by APELLIDO, NOMBRE; '
-        print(query)
     
     if query!='':
-        print('querying')
         cursor = conn.cursor()
         cursor.execute(query)
         results = cursor.fetchall()
