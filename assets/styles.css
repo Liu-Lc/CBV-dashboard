@@ -84,6 +84,14 @@
   height: min-content;
 }
 
+.dropdown-style {
+  margin: 5px 0px 20px;
+  font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+  text-align: left;
+  font-size: 15px;
+  height: min-content;
+}
+
 .DateInput_input {
   font-size: 15px;
   font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
@@ -122,6 +130,7 @@
 
 .dash-table-container {
   z-index: 0 !important;
+  margin-bottom: 50px;
 }
 
 .radio-items {
