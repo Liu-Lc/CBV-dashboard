@@ -44,7 +44,7 @@ layout = html.Div(className='column', children=[
             ),
             html.Div(className='tabs-unique-container', children=[
                 dcc.Dropdown(id='ver-option', className='dropdown-style', 
-                    clearable=False, searchable=False),
+                    clearable=False, searchable=False, placeholder='Seleccione una opción...'),
                 dcc.Loading(
                     id='loading-table', type='default', children=[
                         table.DataTable(id='table-ver',
@@ -126,13 +126,30 @@ def display_results(option, tab):
     elif tab=='vacios' and option!=None:
         query = '''select * from clinica where %s = '' 
                     order by APELLIDO, NOMBRE; ''' % option
-    print(query)
+    elif tab=='duplicados' and option!=None:
+        query = '''select * from clinica
+            where concat({0}) in
+                (select concat({0}) from clinica
+                    group by {0} having {1}) {2}
+            order by {0} {3};'''
+        if option=='apnomced-dup':
+            query = query.format('APELLIDO, NOMBRE, CEDULA', 
+                'AND '.join(f'count({i})>1 '
+                    for i in ['APELLIDO', 'NOMBRE', 'CEDULA']), '', 'asc')
+        elif option=='apnom-dup':
+            query = query.format('APELLIDO, NOMBRE', 
+                'AND '.join(f'count({i})>1 ' 
+                    for i in ['APELLIDO', 'NOMBRE']), '',  'asc')
+        elif option=='ced-dup':
+            query = query.format('CEDULA', 'count(CEDULA)>1', 
+                "AND CEDULA!='' ",  'asc')
+        elif option=='exp-dup':
+            query = query.format('NO', 'count(NO)>1 ', '',  'desc')
     try:
         cursor.execute(query)
         results = cursor.fetchall()
         cursor.close()
         conn.close()
-        print('done', len(results))
         return pd.DataFrame(results, 
             columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number']).to_dict('records')
