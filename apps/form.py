@@ -17,6 +17,10 @@ from dash.dependencies import Input, Output, State
 from otros import keys
 
 
+def isempty(field):
+    return (field=='' or field==None)
+
+
 header = html.Div([
             html.Link(rel="stylesheet",
                 href="https://fonts.googleapis.com/css?family=Montserrat"),
@@ -58,7 +62,7 @@ form =  html.Div(className='container', children=[
                             {'value':'ambigua', 'label':'Ambigua'},
                             {'value':'precisa', 'label':'Precisa'},
                             {'value':'exacta', 'label':'Exacta'},
-                        ], value='precisa'
+                        ], value='exacta'
                     ),
                 ]),
                 ## Data Table
@@ -74,7 +78,7 @@ form =  html.Div(className='container', children=[
                         ],
                         fixed_rows={'headers': True},
                         # page_action='none',
-                        page_size=200,
+                        page_size=150,
                         style_table={'height': '400px', 'overflowY': 'auto'},
                         # style_header={'textAlign': 'center'},
                         style_cell_conditional=[
@@ -137,7 +141,7 @@ form_add =  html.Div(className='container', children=[
                             ],
                             fixed_rows={'headers': True},
                             # page_action='none',
-                            page_size=200,
+                            page_size=150,
                             style_table={'height': '400px', 'overflowY': 'auto'},
                             # style_header={'textAlign': 'center'},
                             style_cell_conditional=[
@@ -195,26 +199,97 @@ tabs =  dcc.Tabs(
 )
 def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
     conn = mysql.connector.connect(**keys.config)
-    query = ''
-    if search_option=='exacta':
-        q = []
-        q.append('select * from clinica ')
-        if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
-        if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
-        if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
-        if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
-        if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
-        query = q[0]
-        if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
-        query += '\norder by APELLIDO, NOMBRE; '
+    query = ''; proc = ''; args = ()
+    if ( not isempty(ap1) or not isempty(ap2) or
+            not isempty(nom) and not isempty(ced) or 
+            not isempty(fnac) ):
+        if search_option=='ambigua':
+            query = 'call'
+            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced):
+                ## apellido 1
+                proc = 'B_1AP'
+                args = (ap1, )
+            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
+                ## apellido 2
+                proc = 'B_2AP'
+                args = (ap1, ap2)
+            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
+                ## apellido 1 nombre
+                proc = 'B_NOMAP1'
+                args = (ap1, nom)
+            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
+                ## apellido 2 nombre
+                proc = 'B_NOMAP2'
+                args = (ap1, ap2, nom)
+            elif not isempty(ced) :
+                ## cedula
+                proc = 'B_CED'
+                args = (ced, )
+            elif not isempty(fnac) :
+                ## fecha
+                proc = 'B_FECHA'
+                args = (fnac, )
+            else: pass
+        elif search_option=='precisa':
+            query = 'call'
+            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced) :
+                ## apellido 1
+                proc = 'BUSCAR1AP'
+                args = (ap1, )
+            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
+                ## apellido 2
+                proc = 'BUSCAR2AP'
+                args = (ap1, ap2)
+            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
+                ## apellido 1 nombre
+                proc = 'BUSCARNOMAP1'
+                args = (ap1, nom)
+            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
+                ## apellido 2 nombre
+                proc = 'BUSCARNOMAP2'
+                args = (ap1, ap2, nom)
+            elif not isempty(ced) :
+                ## cedula
+                proc = 'BUSCARCED'
+                args = (ced, )
+            elif not isempty(fnac) :
+                ## fecha
+                proc = 'BUSCARFECHA'
+                args = (fnac, )
+            else: pass
+        elif search_option=='exacta':
+            q = []
+            q.append('select * from clinica ')
+            if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
+            if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
+            if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
+            if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
+            if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
+            query = q[0]
+            if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
+            query += '\norder by APELLIDO, NOMBRE; '
     
     if query!='':
         cursor = conn.cursor()
-        cursor.execute(query)
-        results = cursor.fetchall()
+        if search_option=='exacta':
+            cursor.execute(query)
+            results = cursor.fetchall()
+        else:
+            cursor.callproc(proc, args)
+            for result in cursor.stored_results():
+                results = result.fetchall()
         cursor.close()
         conn.close()
         return pd.DataFrame(results, 
                 columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'number']).to_dict('records')
     else: return []
+
+# @app.callback(
+#     [Output('table-buscar', 'data'), Output('f-apellido1', 'value'),
+#     Output('f-apellido2', 'value'), Output('f-nombre', 'value'), 
+#     Output('f-cedula', 'value'), Output('f-fechanac', 'value')],
+#     Input('button-limpiar1', 'n_clicks')
+# )
+# def clean_form(nclick):
+#     return [], None, None, None, None, None
