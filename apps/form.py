@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-Created on Sunday, ‎July ‎6, ‎2021, ‏‎08:32
+Created on Sunday, July 6, 2021, 08:32
 @author: Lucia Liu (lucia.liu@utp.ac.pa)
 """
 
 
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc, html
 import dash_table as table
 import mysql.connector
 import pandas as pd
