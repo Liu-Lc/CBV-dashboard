@@ -20,6 +20,7 @@ def isempty(field):
     return (field=='' or field==None)
 
 
+## Title and Links for styles and fonts
 header = html.Div([
             html.Link(rel="stylesheet",
                 href="https://fonts.googleapis.com/css?family=Montserrat"),
@@ -31,9 +32,11 @@ header = html.Div([
             ]),
         ])
 
+## Variable to initialize the complete form. Check styles for classNames.
 form =  html.Div(className='container', children=[
             html.Div(className='row', children=[
                 html.Div(className='one-third column', children=[
+                    ## Starts the left panel with fields
                     html.Div(className='row', children=[
                         html.Span('Apellidos', className='label'),
                         html.Div(className='auto-column', children=[
@@ -56,6 +59,7 @@ form =  html.Div(className='container', children=[
                         ),
                     ]),
                     html.P('', className='spacer'),
+                    ## Type of search radio selection
                     dcc.RadioItems(className='radio-items', id='search-option',
                         options=[
                             {'value':'ambigua', 'label':'Ambigua'},
@@ -64,7 +68,7 @@ form =  html.Div(className='container', children=[
                         ], value='exacta'
                     ),
                 ]),
-                ## Data Table
+                ## Data Table for results in the right side
                 html.Div(className='two-thirds column table', children=[
                     table.DataTable(id='table-buscar',
                         columns=[
@@ -93,6 +97,7 @@ form =  html.Div(className='container', children=[
                     ),
                 ]),
             ]),
+            ## Buttons section in lower section
             html.Div(className='button-container', children=[
                 html.Button('BUSCAR', id='button-buscar', className='large-button'),
                 html.Button('LIMPIAR', id='button-limpiar1', className='large-button'),
@@ -101,9 +106,11 @@ form =  html.Div(className='container', children=[
             ])
         ])
 
+## Variable for adding records form
 form_add =  html.Div(className='container', children=[
                 html.Div(className='row', children=[
                     html.Div(className='one-third column', children=[
+                        ## Left panel for fields
                         html.Div(className='row', children=[
                             html.Span('No.', className='label'),
                             dcc.Input(className='input-style'),
@@ -128,7 +135,7 @@ form_add =  html.Div(className='container', children=[
                         ]),
                         html.P('', className='spacer'),
                     ]),
-                    ## Data Table
+                    ## Data Table for results
                     html.Div(className='two-thirds column table', children=[
                         table.DataTable(id='table-agregar', 
                             columns=[
@@ -156,6 +163,7 @@ form_add =  html.Div(className='container', children=[
                         ),
                     ]),
                 ]),
+                ## Buttons section at lower side
                 html.Div(className='button-container', children=[
                     html.Button('AGREGAR', id='button-agregar', className='large-button'),
                     html.Button('LIMPIAR', id='button-limpiar2', className='large-button'),
@@ -164,6 +172,7 @@ form_add =  html.Div(className='container', children=[
                 ]),
             ])
 
+## Adding a tab container to switch between the searching form and adding form
 tabs =  dcc.Tabs(
             id="tabs-main",
             value='form',
@@ -172,36 +181,44 @@ tabs =  dcc.Tabs(
             content_className='tabs-content',
             children=[
                 dcc.Tab(
+                    ## Tab for searching
                     label='Formulario',
                     value='form',
                     className='tab',
                     selected_className='tab-selected',
-                    children=[form]
+                    children=[form] ## Form variable
                 ),
                 dcc.Tab(
                     label='Agregar',
                     value='agregar',
                     className='tab',
                     selected_className='tab-selected',
-                    children=[form_add]
+                    children=[form_add] ## Add form variable
                 ),
             ]
         )
 
 
+## Callbacks / Actions / Updates
 @app.callback(
+    ## App callback to bring results to table when pressing search button
     Output('table-buscar', 'data'),
     [Input('button-buscar', 'n_clicks')],
+    # Takes data from textboxes
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
     State('f-cedula', 'value'), State('f-fechanac', 'value')]
 )
 def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
+    # mysql connection
     conn = mysql.connector.connect(**keys.config)
+    # Initialize variables
     query = ''; proc = ''; args = ()
+    ## Searching for any last name, first name, ID or birthdate.
     if ( not isempty(ap1) or not isempty(ap2) or
             not isempty(nom) and not isempty(ced) or 
             not isempty(fnac) ):
+        ## Switching between search option selection
         if search_option=='ambigua':
             query = 'call'
             if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced):
@@ -259,6 +276,7 @@ def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
         elif search_option=='exacta':
             q = []
             q.append('select * from clinica ')
+            # Appends sentence depending on fields with contents
             if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
             if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
             if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
@@ -268,8 +286,10 @@ def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
             if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
             query += '\norder by APELLIDO, NOMBRE; '
     
+    # After creating the query, cursor is created
     if query!='':
         cursor = conn.cursor()
+        # Executes query or procedure depending of search option
         if search_option=='exacta':
             cursor.execute(query)
             results = cursor.fetchall()
@@ -279,6 +299,7 @@ def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
                 results = result.fetchall()
         cursor.close()
         conn.close()
+        ## Returns results in a dataframe to output object that is the DataTable
         return pd.DataFrame(results, 
                 columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'number']).to_dict('records')
