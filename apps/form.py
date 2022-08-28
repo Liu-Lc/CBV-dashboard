@@ -69,31 +69,33 @@ form =  html.Div(className='container', children=[
                 ]),
                 ## Data Table for results in the right side
                 html.Div(className='two-thirds column table', children=[
-                    table.DataTable(id='table-buscar',
-                        columns=[
-                            {'id':'id', 'name':'id'},
-                            {'id':'apellido', 'name':'Apellido'},
-                            {'id':'nombre', 'name':'Nombre'},
-                            {'id':'cedula', 'name':'Cédula'},
-                            {'id':'fechanac', 'name':'F. Nac.'},
-                            {'id':'number', 'name':'No.'},
-                        ],
-                        fixed_rows={'headers': True},
-                        # page_action='none',
-                        page_size=150,
-                        style_table={'height': '400px', 'overflowY': 'auto'},
-                        # style_header={'textAlign': 'center'},
-                        style_cell_conditional=[
-                            {'if': {'column_id': c},
-                                'width': '8%'} for c in ['id', 'number']
-                        ] + [
-                            {'if': {'column_id': 'cedula'},
-                                'width': '15%'},
-                            {'if': {'column_id': 'fechanac'},
-                                'width': '12%'} ,
-                        ],
-                        style_cell={'textAlign': 'center', 'min-width': '50px'},
-                    ),
+                    dcc.Loading(id='loading-table', type='default', children=[
+                        table.DataTable(id='table-buscar',
+                            columns=[
+                                {'id':'id', 'name':'id'},
+                                {'id':'apellido', 'name':'Apellido'},
+                                {'id':'nombre', 'name':'Nombre'},
+                                {'id':'cedula', 'name':'Cédula'},
+                                {'id':'fechanac', 'name':'F. Nac.'},
+                                {'id':'number', 'name':'No.'},
+                            ],
+                            fixed_rows={'headers': True},
+                            # page_action='none',
+                            page_size=150,
+                            style_table={'height': '400px', 'overflowY': 'auto'},
+                            # style_header={'textAlign': 'center'},
+                            style_cell_conditional=[
+                                {'if': {'column_id': c},
+                                    'width': '8%'} for c in ['id', 'number']
+                            ] + [
+                                {'if': {'column_id': 'cedula'},
+                                    'width': '15%'},
+                                {'if': {'column_id': 'fechanac'},
+                                    'width': '12%'} ,
+                            ],
+                            style_cell={'textAlign': 'center', 'min-width': '50px'},
+                        ),
+                    ]),
                 ]),
             ]),
             ## Buttons section in lower section
@@ -112,12 +114,18 @@ form_add =  html.Div(className='container', children=[
                         ## Left panel for fields
                         html.Div(className='row', children=[
                             html.Span('No.', className='label'),
-                            dcc.Input(className='input-style'),
-                            html.Button(id='set-id-button', className='small-button', children=[
-                                html.I(className='fa fa-asterisk fa-s')
-                            ]),
-                            html.Button(id='check-id-button', className='small-button', children=[
-                                html.I(className='fa fa-check-circle fa-s')
+                            html.Div(children=[
+                                dcc.Input(className='input-style-s'),
+                                html.Button(id='set-id-button', className='small-button', children=[
+                                    html.I(className='fa fa-asterisk fa-s'),
+                                    # tooltip
+                                    html.Span(className='tooltip', children=['Generar #']),
+                                ]),
+                                html.Button(id='check-id-button', className='small-button', children=[
+                                    html.I(className='fa fa-check-circle fa-s'),
+                                    # tooltip
+                                    html.Span(className='tooltip', children=['Verificar #']),
+                                ]),
                             ]),
                         ]),
                         html.Div(className='row', children=[
