@@ -162,6 +162,17 @@
   width: 200px;
   cursor: pointer;
 }
+.small-button {
+  font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+  font-size: 15px;
+  margin: 4px;
+  padding: 1px;
+  height: 25px;
+  width: 25px;
+  cursor: pointer;
+  margin-left: 5px;
+  /* z-index: 1; */
+}
 
 /* The sidepanel menu */
 .side-panel {
@@ -204,14 +215,16 @@
   z-index: 1;
   font-size: 25px;
   cursor: pointer;
+  width: 39px;
+  height: 39px;
 }
 .config-button:hover, .side-panel .close-button:hover {
   background-color: #FFFFFF;
 }
 
-.fa {
-  width: 29px;
-  height: 29px;
+.fa-s {
+  width: 15px;
+  height: 15px;
 }
 
 .one.column,

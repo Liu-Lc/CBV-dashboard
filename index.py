@@ -38,7 +38,7 @@ app.layout = html.Div(className='mainContainer', children=[
             ], style={'width': '0px'},
         ),
         html.Button(id='config-button', className='config-button', children=[
-            html.I(className='fa fa-cogs')
+            html.I(className='fa fa-cogs fa-xl')
         ]),
     ]),
     html.Div(id='content-page', children=[]),

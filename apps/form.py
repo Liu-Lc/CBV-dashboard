@@ -113,6 +113,12 @@ form_add =  html.Div(className='container', children=[
                         html.Div(className='row', children=[
                             html.Span('No.', className='label'),
                             dcc.Input(className='input-style'),
+                            html.Button(id='set-id-button', className='small-button', children=[
+                                html.I(className='fa fa-asterisk fa-s')
+                            ]),
+                            html.Button(id='check-id-button', className='small-button', children=[
+                                html.I(className='fa fa-check-circle fa-s')
+                            ]),
                         ]),
                         html.Div(className='row', children=[
                             html.Span('Apellidos', className='label'),
