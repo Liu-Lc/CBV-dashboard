@@ -8,7 +8,7 @@ Created on Sunday, July 4, 2021, 19:39
 
 
 import dash
-from dash import dcc, html
+from dash import dcc, html, callback_context as ctx
 import mysql.connector
 import pandas as pd
 from dash.dependencies import Input, Output, State
@@ -52,7 +52,7 @@ app.layout = html.Div(className='mainContainer', children=[
     Input('url', 'pathname')
 )
 def config_button_click(open_click, close_click, path):
-    button = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    button = ctx.triggered_id
     if button=='config-button':
         return {'width': '250px'}
     else: return {'width': '0px'}
