@@ -7,8 +7,7 @@ Created on Sunday, July 6, 2021, 08:32
 """
 
 
-from dash import dcc, html
-import dash_table as table
+from dash import dcc, html, dash_table as table, callback_context as ctx
 import mysql.connector
 import pandas as pd
 from app import app
@@ -202,114 +201,113 @@ tabs =  dcc.Tabs(
 ## Callbacks / Actions / Updates
 @app.callback(
     ## App callback to bring results to table when pressing search button
-    Output('table-buscar', 'data'),
-    [Input('button-buscar', 'n_clicks')],
+    [Output('table-buscar', 'data'), Output('f-apellido1', 'value'),
+    Output('f-apellido2', 'value'), Output('f-nombre', 'value'), 
+    Output('f-cedula', 'value'), Output('f-fechanac', 'value')],
+    [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks')],
     # Takes data from textboxes
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
     State('f-cedula', 'value'), State('f-fechanac', 'value')]
 )
-def button_buscar_click(nclick, search_option, ap1, ap2, nom, ced, fnac):
-    # mysql connection
-    conn = mysql.connector.connect(**keys.config)
-    # Initialize variables
-    query = ''; proc = ''; args = ()
-    ## Searching for any last name, first name, ID or birthdate.
-    if ( not isempty(ap1) or not isempty(ap2) or
+def button_buscar_click(search_click, clean_click, search_option, ap1, ap2, nom, ced, fnac):
+    triggered_id = ctx.triggered_id
+    if triggered_id=='button-limpiar1' or triggered_id==None:
+        return [], '', '', '', '', ''
+    elif triggered_id=='button-buscar':
+        # mysql connection
+        conn = mysql.connector.connect(**keys.config)
+        # Initialize variables
+        query = ''; proc = ''; args = ()
+        ## Searching for any last name, first name, ID or birthdate.
+        if ( not isempty(ap1) or not isempty(ap2) or
+                not isempty(nom) and not isempty(ced) or 
             not isempty(nom) and not isempty(ced) or 
-            not isempty(fnac) ):
-        ## Switching between search option selection
-        if search_option=='ambigua':
-            query = 'call'
-            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced):
-                ## apellido 1
-                proc = 'B_1AP'
-                args = (ap1, )
-            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
-                ## apellido 2
-                proc = 'B_2AP'
-                args = (ap1, ap2)
-            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
-                ## apellido 1 nombre
-                proc = 'B_NOMAP1'
-                args = (ap1, nom)
-            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
-                ## apellido 2 nombre
-                proc = 'B_NOMAP2'
-                args = (ap1, ap2, nom)
-            elif not isempty(ced) :
-                ## cedula
-                proc = 'B_CED'
-                args = (ced, )
-            elif not isempty(fnac) :
-                ## fecha
-                proc = 'B_FECHA'
-                args = (fnac, )
-            else: pass
-        elif search_option=='precisa':
-            query = 'call'
-            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced) :
-                ## apellido 1
-                proc = 'BUSCAR1AP'
-                args = (ap1, )
-            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
-                ## apellido 2
-                proc = 'BUSCAR2AP'
-                args = (ap1, ap2)
-            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
-                ## apellido 1 nombre
-                proc = 'BUSCARNOMAP1'
-                args = (ap1, nom)
-            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
-                ## apellido 2 nombre
-                proc = 'BUSCARNOMAP2'
-                args = (ap1, ap2, nom)
-            elif not isempty(ced) :
-                ## cedula
-                proc = 'BUSCARCED'
-                args = (ced, )
-            elif not isempty(fnac) :
-                ## fecha
-                proc = 'BUSCARFECHA'
-                args = (fnac, )
-            else: pass
-        elif search_option=='exacta':
-            q = []
-            q.append('select * from clinica ')
-            # Appends sentence depending on fields with contents
-            if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
-            if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
-            if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
-            if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
-            if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
-            query = q[0]
-            if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
-            query += '\norder by APELLIDO, NOMBRE; '
-    
-    # After creating the query, cursor is created
-    if query!='':
-        cursor = conn.cursor()
-        # Executes query or procedure depending of search option
-        if search_option=='exacta':
-            cursor.execute(query)
-            results = cursor.fetchall()
-        else:
-            cursor.callproc(proc, args)
-            for result in cursor.stored_results():
-                results = result.fetchall()
-        cursor.close()
-        conn.close()
-        ## Returns results in a dataframe to output object that is the DataTable
-        return pd.DataFrame(results, 
-                columns=['id', 'apellido', 'nombre', 
-                    'cedula', 'fecha_nac', 'number']).to_dict('records')
-    else: return []
-
-# @app.callback(
-#     [Output('table-buscar', 'data'), Output('f-apellido1', 'value'),
-#     Output('f-apellido2', 'value'), Output('f-nombre', 'value'), 
-#     Output('f-cedula', 'value'), Output('f-fechanac', 'value')],
-#     Input('button-limpiar1', 'n_clicks')
-# )
-# def clean_form(nclick):
-#     return [], None, None, None, None, None
+                not isempty(nom) and not isempty(ced) or 
+                not isempty(fnac) ):
+            ## Switching between search option selection
+            if search_option=='ambigua':
+                query = 'call'
+                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced):
+                    ## apellido 1
+                    proc = 'B_1AP'
+                    args = (ap1, )
+                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
+                    ## apellido 2
+                    proc = 'B_2AP'
+                    args = (ap1, ap2)
+                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
+                    ## apellido 1 nombre
+                    proc = 'B_NOMAP1'
+                    args = (ap1, nom)
+                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
+                    ## apellido 2 nombre
+                    proc = 'B_NOMAP2'
+                    args = (ap1, ap2, nom)
+                elif not isempty(ced) :
+                    ## cedula
+                    proc = 'B_CED'
+                    args = (ced, )
+                elif not isempty(fnac) :
+                    ## fecha
+                    proc = 'B_FECHA'
+                    args = (fnac, )
+                else: pass
+            elif search_option=='precisa':
+                query = 'call'
+                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced) :
+                    ## apellido 1
+                    proc = 'BUSCAR1AP'
+                    args = (ap1, )
+                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
+                    ## apellido 2
+                    proc = 'BUSCAR2AP'
+                    args = (ap1, ap2)
+                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
+                    ## apellido 1 nombre
+                    proc = 'BUSCARNOMAP1'
+                    args = (ap1, nom)
+                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
+                    ## apellido 2 nombre
+                    proc = 'BUSCARNOMAP2'
+                    args = (ap1, ap2, nom)
+                elif not isempty(ced) :
+                    ## cedula
+                    proc = 'BUSCARCED'
+                    args = (ced, )
+                elif not isempty(fnac) :
+                    ## fecha
+                    proc = 'BUSCARFECHA'
+                    args = (fnac, )
+                else: pass
+            elif search_option=='exacta':
+                q = []
+                q.append('select * from clinica ')
+                # Appends sentence depending on fields with contents
+                if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
+                if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
+                if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
+                if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
+                if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
+                query = q[0]
+                if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
+                query += '\norder by APELLIDO, NOMBRE; '
+        
+        # After creating the query, cursor is created
+        if query!='':
+            cursor = conn.cursor()
+            # Executes query or procedure depending of search option
+            if search_option=='exacta':
+                cursor.execute(query)
+                results = cursor.fetchall()
+            else:
+                cursor.callproc(proc, args)
+                for result in cursor.stored_results():
+                    results = result.fetchall()
+            cursor.close()
+            conn.close()
+            ## Returns results in a dataframe to output object that is the DataTable
+            return pd.DataFrame(results, 
+                    columns=['id', 'apellido', 'nombre', 
+                        'cedula', 'fecha_nac', 'number']).to_dict('records'), ap1, ap2, nom, ced, fnac
+        else: return [], ap1, ap2, nom, ced, fnac

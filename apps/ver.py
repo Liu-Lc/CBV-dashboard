@@ -7,8 +7,7 @@ Created on Sunday, July 4, 2021, 19:42
 """
 
 
-from dash import dcc, html
-import dash_table as table
+from dash import dcc, html, dash_table as table
 import mysql.connector
 import pandas as pd
 from app import app

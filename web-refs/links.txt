@@ -35,3 +35,5 @@ https://www.w3schools.com/howto/howto_js_collapse_sidepanel.asp
 
 Advanced callbacks for multiple input
 https://dash.plotly.com/advanced-callbacks
+And duplicate callbacks error
+https://dash.plotly.com/duplicate-callback-outputs
