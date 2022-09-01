@@ -7,7 +7,6 @@ Created on Sunday, July 6, 2021, 08:32
 """
 
 
-from tabnanny import check
 from dash import dcc, html, dash_table as table, callback_context as ctx
 import mysql.connector
 import pandas as pd
@@ -117,11 +116,11 @@ form_add =  html.Div(className='container', children=[
                             html.Span('No.', className='label'),
                             html.Div(className='row', children=[
                                 dcc.Input(id='a-number', className='input-style-s'),
-                                # html.Button(id='set-id-button', className='small-button', children=[
-                                #     html.I(className='fa fa-asterisk fa-s'),
-                                #     # tooltip
-                                #     html.Span(className='tooltip', children=['Generar #']),
-                                # ]),
+                                html.Button(id='set-id-button', className='small-button', children=[
+                                    html.I(className='fa fa-asterisk fa-s'),
+                                    # tooltip
+                                    html.Span(className='tooltip', children=['Generar #']),
+                                ]),
                                 html.Button(id='check-id-button', className='small-button', children=[
                                     html.I(className='fa fa-check-circle fa-s'),
                                     # tooltip
@@ -328,28 +327,43 @@ def button_buscar_click(search_click, clean_click, search_option, ap1, ap2, nom,
         else: return [], ap1, ap2, nom, ced, fnac
 
 @app.callback(
-    Output('a-number', 'className'),
-    [Input('check-id-button', 'n_clicks')]
+    [Output('a-number', 'className'), Output('a-number', 'value')],
+    [Input('check-id-button', 'n_clicks'), Input('set-id-button', 'n_clicks')],
+    [State('a-number', 'value')]
 )
-def number_funcions(check_click):
-    if check_click!=None:
+def number_funcions(check_click, set_click, number):
+    triggered_id = ctx.triggered_id
+    if triggered_id=='check-id-button' and check_click!=None:
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
         # Initialize variables
-        query = '';
-        cursor = conn.cursor()
+        query = f'SELECT NO FROM clinica WHERE NO={number}';
+        cursor = conn.cursor(buffered=True)
+        try:
+            # insert error handling because of number field
+            cursor.execute(query)
+            results = cursor.fetchone()
+            cursor.close()
+            conn.close()
+        except: return 'input-style-s', number
+        if results==None:
+            return 'input-style-s input-green', number
+        else:
+            return 'input-style-s input-red', number
+    elif triggered_id=='set-id-button' and set_click!=None:
+        # mysql connection
+        conn = mysql.connector.connect(**keys.config)
+        # Initialize variables
+        query = f'SELECT MAX(NO) FROM clinica';
+        # print(query)
+        cursor = conn.cursor(buffered=True)
         cursor.execute(query)
         results = cursor.fetchone()
-        print(results)
         cursor.close()
         conn.close()
-        # if 
-    # triggered_id = ctx.triggered_id
-    # if triggered_id=='set-id-button':
-    #     # mysql connection
-    #     conn = mysql.connector.connect(**keys.config)
-    #     # Initialize variables
-    #     query = ''; proc = ''; args = ()
-    # elif triggered_id=='check-id-button':
-    #     print()
-    return 'input-style-s'
+        if results==None:
+            return 'input-style-s', ''
+        else:
+            return 'input-style-s', results[0]+1
+    return 'input-style-s', number
+

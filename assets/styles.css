@@ -90,7 +90,7 @@
   text-align: center;
   font-size: 15px;
   height: min-content;
-  width: 115px;
+  width: 108px;
 }
 
 .dropdown-style {
@@ -203,7 +203,7 @@
 .input-red {
   background-color: #ffaaaa;
 }
-.input-red {
+.input-green {
   background-color: #a6ffa0;
 }
 
