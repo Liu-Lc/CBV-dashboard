@@ -101,24 +101,6 @@
   height: min-content;
 }
 
-.small-button .tooltip {
-  visibility: hidden;
-  width: 120px;
-  background-color: black;
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 5px 0;
-  /* Position the tooltip */
-  position: absolute;
-  z-index: 1;
-  top: 10%;
-  margin-left: -60px; /* Use half of the width (120/2 = 60), to center the tooltip */
-}
-.small-button:hover .tooltip {
-  visibility: visible;
-}
-
 .DateInput_input {
   font-size: 15px;
   font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
@@ -192,13 +174,37 @@
 .small-button {
   font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
   font-size: 15px;
-  margin: 2px;
+  margin: 5px;
   padding: 1px;
   height: 25px;
   width: 25px;
   cursor: pointer;
   margin-left: 5px;
   /* z-index: 1; */
+}
+.small-button .tooltip {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+  top: 10%;
+  margin-left: -60px; /* Use half of the width (120/2 = 60), to center the tooltip */
+}
+.small-button:hover .tooltip {
+  visibility: visible;
+}
+
+.input-red {
+  background-color: #ffaaaa;
+}
+.input-red {
+  background-color: #a6ffa0;
 }
 
 /* The sidepanel menu */

@@ -7,6 +7,7 @@ Created on Sunday, July 6, 2021, 08:32
 """
 
 
+from tabnanny import check
 from dash import dcc, html, dash_table as table, callback_context as ctx
 import mysql.connector
 import pandas as pd
@@ -114,13 +115,13 @@ form_add =  html.Div(className='container', children=[
                         ## Left panel for fields
                         html.Div(className='row', children=[
                             html.Span('No.', className='label'),
-                            html.Div(children=[
-                                dcc.Input(className='input-style-s'),
-                                html.Button(id='set-id-button', className='small-button', children=[
-                                    html.I(className='fa fa-asterisk fa-s'),
-                                    # tooltip
-                                    html.Span(className='tooltip', children=['Generar #']),
-                                ]),
+                            html.Div(className='row', children=[
+                                dcc.Input(id='a-number', className='input-style-s'),
+                                # html.Button(id='set-id-button', className='small-button', children=[
+                                #     html.I(className='fa fa-asterisk fa-s'),
+                                #     # tooltip
+                                #     html.Span(className='tooltip', children=['Generar #']),
+                                # ]),
                                 html.Button(id='check-id-button', className='small-button', children=[
                                     html.I(className='fa fa-check-circle fa-s'),
                                     # tooltip
@@ -325,3 +326,30 @@ def button_buscar_click(search_click, clean_click, search_option, ap1, ap2, nom,
                     columns=['id', 'apellido', 'nombre', 
                         'cedula', 'fecha_nac', 'number']).to_dict('records'), ap1, ap2, nom, ced, fnac
         else: return [], ap1, ap2, nom, ced, fnac
+
+@app.callback(
+    Output('a-number', 'className'),
+    [Input('check-id-button', 'n_clicks')]
+)
+def number_funcions(check_click):
+    if check_click!=None:
+        # mysql connection
+        conn = mysql.connector.connect(**keys.config)
+        # Initialize variables
+        query = '';
+        cursor = conn.cursor()
+        cursor.execute(query)
+        results = cursor.fetchone()
+        print(results)
+        cursor.close()
+        conn.close()
+        # if 
+    # triggered_id = ctx.triggered_id
+    # if triggered_id=='set-id-button':
+    #     # mysql connection
+    #     conn = mysql.connector.connect(**keys.config)
+    #     # Initialize variables
+    #     query = ''; proc = ''; args = ()
+    # elif triggered_id=='check-id-button':
+    #     print()
+    return 'input-style-s'
