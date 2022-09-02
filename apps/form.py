@@ -10,9 +10,25 @@ Created on Sunday, July 6, 2021, 08:32
 from dash import dcc, html, dash_table as table, callback_context as ctx
 import mysql.connector
 import pandas as pd
+import os, sys, logging, datetime, json
 from app import app
 from dash.dependencies import Input, Output, State
 from otros import keys
+
+
+## Set up logging
+LOG_FILE = os.getcwd() + "/logs"
+if not os.path.exists(LOG_FILE):
+    os.makedirs(LOG_FILE)
+LOG_FILE = LOG_FILE + f"/log_{datetime.datetime.today().date()}.log"
+logFormatter = logging.Formatter("%(levelname)s %(asctime)s %(message)s")
+fileHandler = logging.FileHandler("{0}".format(LOG_FILE))
+fileHandler.setFormatter(logFormatter)
+stdout_handler = logging.StreamHandler(sys.stdout)
+rootLogger = logging.getLogger()
+rootLogger.addHandler(fileHandler)
+rootLogger.addHandler(stdout_handler)
+rootLogger.setLevel(logging.INFO)
 
 
 def isempty(field):
