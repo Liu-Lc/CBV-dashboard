@@ -55,23 +55,22 @@ form =  html.Div(className='container', children=[
                     html.Div(className='row', children=[
                         html.Span('Apellidos', className='label'),
                         html.Div(className='auto-column', children=[
-                            dcc.Input(id='f-apellido1', className='input-style'),
-                            dcc.Input(id='f-apellido2', className='input-style'),
+                            dcc.Input(id='f-apellido1', className='input-style', autoComplete='off'),
+                            dcc.Input(id='f-apellido2', className='input-style', autoComplete='off'),
                         ])
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Nombre', className='label'),
-                        dcc.Input(id='f-nombre', className='input-style'),
+                        dcc.Input(id='f-nombre', className='input-style', autoComplete='off'),
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Cédula', className='label'),
-                        dcc.Input(id='f-cedula', className='input-style'),
+                        dcc.Input(id='f-cedula', className='input-style', autoComplete='off'),
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Fecha de nacimiento', className='label'),
                         dcc.DatePickerSingle(id='f-fechanac', className='input-style',
-                            clearable=True, 
-                        ),
+                            clearable=True, display_format='DD/MM/YYYY'),
                     ]),
                     html.P('', className='spacer'),
                     ## Type of search radio selection
@@ -125,13 +124,15 @@ form =  html.Div(className='container', children=[
 
 ## Variable for adding records form
 form_add =  html.Div(className='container', children=[
+                dcc.ConfirmDialog(id='msg-empty-fields',
+                     message='Faltan campos por rellenar'),
                 html.Div(className='row', children=[
                     html.Div(className='one-third column', children=[
                         ## Left panel for fields
                         html.Div(className='row', children=[
                             html.Span('No.', className='label'),
                             html.Div(className='row', children=[
-                                dcc.Input(id='a-number', className='input-style-s'),
+                                dcc.Input(id='a-number', type='number', className='input-style-s', autoComplete='off'),
                                 html.Button(id='set-id-button', className='small-button', children=[
                                     html.I(className='fa fa-asterisk fa-s'),
                                     # tooltip
@@ -146,21 +147,20 @@ form_add =  html.Div(className='container', children=[
                         ]),
                         html.Div(className='row', children=[
                             html.Span('Apellidos', className='label'),
-                            dcc.Input(className='input-style'),
+                            dcc.Input(className='input-style', id='a-apellido', autoComplete='off'),
                         ]),
                         html.Div(className='row', children=[
                             html.Span('Nombre', className='label'),
-                            dcc.Input(className='input-style'),
+                            dcc.Input(className='input-style', id='a-nombre', autoComplete='off'),
                         ]),
                         html.Div(className='row', children=[
                             html.Span('Cédula', className='label'),
-                            dcc.Input(className='input-style'),
+                            dcc.Input(className='input-style', id='a-cedula', autoComplete='off'),
                         ]),
                         html.Div(className='row', children=[
                             html.Span('Fecha de nacimiento', className='label'),
-                            dcc.DatePickerSingle(id='fechanac2', className='input-style',
-                                clearable=True, 
-                            ),
+                            dcc.DatePickerSingle(id='a-fechanac', className='input-style',
+                                clearable=True, display_format='DD/MM/YYYY'),
                         ]),
                         html.P('', className='spacer'),
                     ]),
