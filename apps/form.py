@@ -233,12 +233,12 @@ tabs =  dcc.Tabs(
     ## App callback to bring results to table when pressing search button
     [Output('table-buscar', 'data'), Output('f-apellido1', 'value'),
     Output('f-apellido2', 'value'), Output('f-nombre', 'value'), 
-    Output('f-cedula', 'value'), Output('f-fechanac', 'value')],
+    Output('f-cedula', 'value'), Output('f-fechanac', 'value'),],
     [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks')],
     # Takes data from textboxes
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
-    State('f-cedula', 'value'), State('f-fechanac', 'value')]
+    State('f-cedula', 'value'), State('f-fechanac', 'date')]
 )
 def button_buscar_click(search_click, clean_click, search_option, ap1, ap2, nom, ced, fnac):
     triggered_id = ctx.triggered_id
@@ -343,43 +343,140 @@ def button_buscar_click(search_click, clean_click, search_option, ap1, ap2, nom,
         else: return [], ap1, ap2, nom, ced, fnac
 
 @app.callback(
-    [Output('a-number', 'className'), Output('a-number', 'value')],
-    [Input('check-id-button', 'n_clicks'), Input('set-id-button', 'n_clicks')],
-    [State('a-number', 'value')]
+    ## App callback to add a record
+    [Output('table-agregar', 'data'), Output('a-apellido', 'value'),
+    Output('a-nombre', 'value'), Output('a-cedula', 'value'), 
+    Output('a-fechanac', 'value'), Output('a-number', 'value'), 
+    Output('a-number', 'className'), Output('msg-empty-fields', 'displayed'),
+    Output('msg-empty-fields', 'message')],
+    [Input('check-id-button', 'n_clicks'), Input('set-id-button', 'n_clicks'), 
+    Input('button-agregar', 'n_clicks'), Input('button-limpiar2', 'n_clicks'),
+    Input('tabs-main', 'value')],
+    [State('table-agregar', 'data'), State('a-apellido', 'value'), 
+    State('a-nombre', 'value'), State('a-cedula', 'value'), 
+    State('a-fechanac', 'date'), State('a-number', 'value'), 
+    State('a-number', 'className'), State('msg-empty-fields', 'message')]
 )
-def number_funcions(check_click, set_click, number):
+def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom, ced, fnac, number, num_class, message):
+    config = json.load(open('assets/config.json'))
     triggered_id = ctx.triggered_id
     if triggered_id=='check-id-button' and check_click!=None:
-        # mysql connection
-        conn = mysql.connector.connect(**keys.config)
-        # Initialize variables
-        query = f'SELECT NO FROM clinica WHERE NO={number}';
-        cursor = conn.cursor(buffered=True)
+        ### Check number id button if already exists
         try:
+            # mysql connection
+            conn = mysql.connector.connect(**keys.config)
+            # Initialize variables
+            query = f'SELECT NO FROM clinica WHERE NO={number}';
+            cursor = conn.cursor(buffered=True)
             # insert error handling because of number field
             cursor.execute(query)
             results = cursor.fetchone()
             cursor.close()
             conn.close()
-        except: return 'input-style-s', number
+        except: return data, ap, nom, ced, fnac, number, 'input-style-s', True, 'Error: No connection.'
         if results==None:
-            return 'input-style-s input-green', number
+            return data, ap, nom, ced, fnac, number, 'input-style-s input-green', False, message
         else:
-            return 'input-style-s input-red', number
+            return data, ap, nom, ced, fnac, number, 'input-style-s input-red', False, message
     elif triggered_id=='set-id-button' and set_click!=None:
+        ### Set id button generates a new number by adding 1 to the max number
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
         # Initialize variables
         query = f'SELECT MAX(NO) FROM clinica';
-        # print(query)
         cursor = conn.cursor(buffered=True)
         cursor.execute(query)
         results = cursor.fetchone()
         cursor.close()
         conn.close()
         if results==None:
-            return 'input-style-s', ''
+            return data, ap, nom, ced, fnac, '', num_class, False, message
         else:
-            return 'input-style-s', results[0]+1
-    return 'input-style-s', number
-
+            return data, ap, nom, ced, fnac, results[0]+1, num_class, False, message
+    elif triggered_id=='button-agregar':
+        ### Pressing add button
+        # check if all fields are complete
+        if ap==None or ap=='' or nom==None or nom=='' or ced==None or ced=='' or fnac==None or number==None or number=='':
+            # Returns True to displayed message for empty fields
+            return data, ap, nom, ced, fnac, number, num_class, True, 'Faltan campos por rellenar.'
+        else:
+            # If the fields are complete, then add to database
+            try:
+                # mysql connection
+                conn = mysql.connector.connect(**keys.config)
+                # Initialize variables
+                query = f'''SELECT * FROM clinica WHERE (APELLIDO = '{ap}' AND NOMBRE = '{nom}') 
+                        OR (CEDULA = '{ced}' AND CEDULA != '') OR NO = '{number}';''';
+                cursor = conn.cursor(buffered=True)
+                cursor.execute(query)
+                results = cursor.fetchone()
+                cursor.close()
+            except:
+                return data, ap, nom, ced, fnac, number, num_class, True, 'Error: No connection.'
+            if results==None: # If the select statement returns None, means theres no similar record
+                # Can be added
+                insert_query = f'''INSERT INTO %s (APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO) VALUES('{ap}', '{nom}', '{ced}', '{fnac}', {number});'''
+                try:
+                    cursor = conn.cursor(buffered=True)
+                    cursor.execute(insert_query % 'clinica')
+                    cursor.execute(insert_query % 'added')
+                    conn.commit()
+                    cursor.close()
+                    print('Success')
+                    result = (None, '', '', '', 'Null', '', num_class, False, '')
+                except Exception as e:
+                    print(f'Error inserting. {e}')
+                    conn.close()
+                    return (data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.')
+            else:
+                # Cannot be added because there's already a similar record
+                conn.close()
+                return (data, ap, nom, ced, fnac, number, num_class, True, 
+                'Error. Existe un registro con el mismo número de cédula y/o expediente.')
+            ## If the record was added succesfully then the datatable has to be updated
+            try:
+                query = f'''SELECT * FROM added where No>{config['last_num']};'''
+                cursor = conn.cursor()
+                cursor.execute(query)
+                data = cursor.fetchall()
+                conn.commit()
+                cursor.close()
+                # result = (data, ap, nom, ced, fnac, number, num_class, False, '')
+            except Exception as e:
+                print(f'Error updating data table. {e}')
+                conn.close()
+                return (data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.')
+            conn.close()
+            print(result)
+            return result
+    elif triggered_id=='button-limpiar2':
+        # mysql connection
+        conn = mysql.connector.connect(**keys.config)
+        # Initialize variables
+        query = f'''SELECT MAX(No) FROM added;''';
+        cursor = conn.cursor(buffered=True)
+        cursor.execute(query)
+        results = cursor.fetchone()
+        cursor.close()
+        # Create dictionary variable with max number
+        config = {'last_num':results[0]}
+        # Dump json of dictionary into config file
+        json.dump(config, open('assets/config.json', 'w'))
+        conn.close()
+        # drop everything from table added
+        return None, None, None, None, None, None, num_class, False, message
+    elif triggered_id=='tabs-main':
+        if tab=='agregar':
+            # mysql connection
+            conn = mysql.connector.connect(**keys.config)
+            # Initialize variables
+            query = f'''SELECT * FROM added WHERE No>{config['last_num']};''';
+            cursor = conn.cursor(buffered=True)
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
+                'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
+                None, None, None, None, None, num_class, False, message]
+    return data, ap, nom, ced, fnac, number, num_class, False, message
