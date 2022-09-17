@@ -8,6 +8,7 @@ Created on Sunday, July 6, 2021, 08:32
 
 
 from dash import dcc, html, dash_table as table, callback_context as ctx
+import dash_bootstrap_components as dbc
 import mysql.connector
 import pandas as pd
 import os, sys, logging, datetime, json
@@ -146,6 +147,26 @@ form =  html.Div(className='container', children=[
             ])
         ])
 
+form_modal = html.Div(children=[
+    dbc.Modal([
+        dbc.ModalHeader('Header'),
+        dbc.ModalBody('Body'),
+        dbc.ModalFooter(
+            dbc.Button('Close', id='modificar-close', className='ml-auto')
+        ), 
+    ], #id='modal', is_open=False,
+    id="modal", # Give the modal an id name 
+    is_open=False,  # Open the modal at opening the webpage.
+    size="lg",  # "sm", "lg", "xl" = small, large or extra large
+    backdrop=True,  # Modal to not be closed by clicking on backdrop
+    scrollable=True,  # Scrollable in case of large amount of text
+    centered=True,  # Vertically center modal 
+    # keyboard=True,  # Close modal when escape is pressed
+    fade=True,  # True, False
+    # style={"max-width": "none", "width": "[50%"}
+    )
+])
+
 ## Variable for adding records form
 form_add =  html.Div(className='container', children=[
                 dcc.ConfirmDialog(id='msg-empty-fields',
@@ -239,7 +260,7 @@ tabs =  dcc.Tabs(
                     value='form',
                     className='tab',
                     selected_className='tab-selected',
-                    children=[form] ## Form variable
+                    children=[form, form_modal] ## Form variable
                 ),
                 dcc.Tab(
                     label='Agregar',
@@ -464,3 +485,14 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                 'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
                 None, None, None, None, None, num_class, False, message]
     return data, ap, nom, ced, fnac, number, num_class, False, message
+
+@app.callback(
+    Output('modal', 'is_open'),
+    [Input('button-modificar1', 'n_clicks'), Input('modificar-close', 'n_clicks')],
+    [State('modal', 'is_open')]
+)
+def toggle_modal(open, close, is_open):
+    if open or close:
+        return not is_open
+    return is_open
+
