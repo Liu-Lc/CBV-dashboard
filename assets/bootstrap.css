@@ -19,6 +19,13 @@
     outline: 0;
 }
 
+.modal-row {
+    margin: 10px 0px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
 .modal-dialog {
     position: relative;
     width: auto;
@@ -110,7 +117,7 @@
     display: flex;
     -ms-flex-direction: column;
     flex-direction: column;
-    width: 100%;
+    width: 500px;
     pointer-events: auto;
     background-color: #fff;
     background-clip: padding-box;

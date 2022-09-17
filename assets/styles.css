@@ -93,6 +93,15 @@
   width: 108px;
 }
 
+.input-style-m {
+  margin: 5px;
+  font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+  text-align: center;
+  font-size: 15px;
+  height: min-content;
+  width: 250px;
+}
+
 .dropdown-style {
   margin: 5px 0px 20px;
   font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;

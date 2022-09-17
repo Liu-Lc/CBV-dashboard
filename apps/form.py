@@ -149,21 +149,45 @@ form =  html.Div(className='container', children=[
 
 form_modal = html.Div(children=[
     dbc.Modal([
-        dbc.ModalHeader('Header'),
-        dbc.ModalBody('Body'),
+        dbc.ModalHeader(children=[
+            dbc.ModalTitle("Modificar Registro")
+        ], close_button=False),
+        dbc.ModalBody(children=[
+            html.Div(className='modal-row', children=[
+                html.Span('No.', className='label'),
+                dcc.Input(className='input-style', id='modal-number', 
+                    type='number', autoComplete='off'),
+            ]),
+            html.P('', className='spacer'),
+            html.Div(className='modal-row', children=[
+                html.Span('Apellidos', className='label'),
+                dcc.Input(className='input-style-m', id='modal-apellido', autoComplete='off'),
+            ]),
+            html.Div(className='modal-row', children=[
+                html.Span('Nombre', className='label'),
+                dcc.Input(className='input-style-m', id='modal-nombre', autoComplete='off'),
+            ]),
+            html.Div(className='modal-row', children=[
+                html.Span('Cédula', className='label'),
+                dcc.Input(className='input-style-m', id='modal-cedula', autoComplete='off'),
+            ]),
+            html.Div(className='modal-row', children=[
+                html.Span('Fecha de nacimiento', className='label'),
+                dcc.DatePickerSingle(className='input-style-m',id='modal-fechanac', 
+                    clearable=True, display_format='DD/MM/YYYY'),
+            ]),
+        ]),
         dbc.ModalFooter(
             dbc.Button('Close', id='modificar-close', className='ml-auto')
         ), 
-    ], #id='modal', is_open=False,
+    ],
     id="modal", # Give the modal an id name 
     is_open=False,  # Open the modal at opening the webpage.
     size="lg",  # "sm", "lg", "xl" = small, large or extra large
     backdrop=True,  # Modal to not be closed by clicking on backdrop
     scrollable=True,  # Scrollable in case of large amount of text
     centered=True,  # Vertically center modal 
-    # keyboard=True,  # Close modal when escape is pressed
     fade=True,  # True, False
-    # style={"max-width": "none", "width": "[50%"}
     )
 ])
 
