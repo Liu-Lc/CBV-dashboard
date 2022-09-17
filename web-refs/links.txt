@@ -37,3 +37,13 @@ Advanced callbacks for multiple input
 https://dash.plotly.com/advanced-callbacks
 And duplicate callbacks error
 https://dash.plotly.com/duplicate-callback-outputs
+
+Securing server
+https://www.a2hosting.com/kb/security/hardening-a-server-with-fail2ban
+
+Dash basic user auth
+https://levelup.gitconnected.com/how-to-setup-user-authentication-for-dash-apps-using-python-and-flask-6c2e430cdb51
+
+Modal Windows
+https://python.plainenglish.io/how-to-create-a-model-window-in-dash-4ab1c8e234d3
+
