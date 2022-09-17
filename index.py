@@ -7,14 +7,9 @@ Created on Sunday, July 4, 2021, 19:39
 """
 
 
-import dash
 from dash import dcc, html, callback_context as ctx
-import mysql.connector
-import pandas as pd
-from dash.dependencies import Input, Output, State
-
-import otros.keys as keys
-from app import app
+from dash.dependencies import Input, Output
+from app import app, auth
 from apps import form, ver
 
 
