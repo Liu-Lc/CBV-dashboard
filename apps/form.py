@@ -546,13 +546,37 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                     None, None, None, None, None, num_class, False, message]
     return data, ap, nom, ced, fnac, number, num_class, False, message
 
+
 @app.callback(
-    Output('modal', 'is_open'),
-    [Input('button-modificar1', 'n_clicks'), Input('modificar-close', 'n_clicks')],
-    [State('modal', 'is_open')]
+    [Output('modal', 'is_open'), Output('modal-number', 'value'),
+    Output('modal-apellido', 'value'), Output('modal-nombre', 'value'),
+    Output('modal-cedula', 'value'), Output('modal-fechanac', 'value')],
+    [Input('button-modificar1', 'n_clicks'), Input('button-modificar2', 'n_clicks'),
+    Input('close-modificar', 'n_clicks'), Input('button-restaurar', 'n_clicks')],
+    [State('modal', 'is_open'), State('tabs-main', 'value'), 
+    State('table-buscar', 'active_cell'), State('table-buscar', 'data'),
+    State('table-agregar', 'active_cell'), State('table-agregar', 'data')]
 )
-def toggle_modal(open, close, is_open):
-    if open or close:
-        return not is_open
-    return is_open
+def show_modificar(form_open, add_open, close, restaurar, is_open, tab, form_cell, form_rows, add_cell, add_rows):
+    triggered_id = ctx.triggered_id
+    if tab=='form': rows = form_rows; cell = form_cell
+    elif tab=='agregar': rows = add_rows; cell = add_cell
+    if triggered_id=='button-restaurar':
+        # Restore the value to original
+        data = pd.DataFrame(rows, columns=['id', 'apellido', 'nombre', 
+                    'cedula', 'fecha_nac', 'number'])
+        row = data[data.id==cell['row_id']].squeeze()
+        return is_open, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
+    else:
+        # When the modal initializates
+        if (form_open or add_open) and cell!=None:
+            data = pd.DataFrame(rows, columns=['id', 'apellido', 'nombre', 
+                            'cedula', 'fecha_nac', 'number'])
+            row = data[data.id==cell['row_id']].squeeze()
+            # Shows the information from the selected row into the modal
+            return not is_open, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
+        elif close: 
+            # Closes the modal and returns None (clears all)
+            return not is_open, None, None, None, None, None
+    return is_open, None, None, None, None, None
 
