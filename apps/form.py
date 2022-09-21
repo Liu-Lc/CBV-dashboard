@@ -65,11 +65,20 @@ header = html.Div([
             html.Link(rel="stylesheet",
                 href="https://fonts.googleapis.com/css?family=Montserrat"),
             html.Link(rel="stylesheet",
-                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"),
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"),
             html.Div(className='column', children=[
                 html.H1('Formulario'),
-                html.Hr()
+                html.Hr(),
+                html.Div(className='row right', children=[
+                    dcc.Loading(id='loading-connection', type='circle', children=[
+                        html.I(className='fa fa-square-check fa-green', id='connection-good', style={'display':'none'}),
+                        html.I(className='fa fa-square-xmark fa-red', id='connection-bad', style={'display':'none'}),
+                    ], className='size-small'),
+                    html.Spacer(),
+                    html.Span('Conexión', className='right'),
+                ]),
             ]),
+            html.Spacer(),
         ])
 
 ## Variable to initialize the complete form. Check styles for classNames.
@@ -149,8 +158,11 @@ form =  html.Div(className='container', children=[
 
 form_modal = html.Div(children=[
     dbc.Modal([
-        dbc.ModalHeader(children=[
-            dbc.ModalTitle("Modificar Registro")
+        dbc.ModalHeader([
+            dbc.ModalTitle("Modificar Registro"),
+            html.Button(id='close-modificar', className='square-button-m', children=[
+                html.I(className='fa fa-close fa-xl')
+            ]),
         ], close_button=False),
         dbc.ModalBody(children=[
             html.Div(className='modal-row', children=[
@@ -176,16 +188,17 @@ form_modal = html.Div(children=[
                 dcc.DatePickerSingle(className='input-style-m',id='modal-fechanac', 
                     clearable=True, display_format='DD/MM/YYYY'),
             ]),
+            # dbc.Button('Close', id='modificar-close', className='ml-auto')
+            html.Div(className='button-container', children=[
+                html.Button('MODIFICAR', id='button-modificar', className='large-button'),
+                html.Button('RESTAURAR', id='button-restaurar', className='large-button'),
+            ])
         ]),
-        dbc.ModalFooter(
-            dbc.Button('Close', id='modificar-close', className='ml-auto')
-        ), 
     ],
     id="modal", # Give the modal an id name 
     is_open=False,  # Open the modal at opening the webpage.
     size="lg",  # "sm", "lg", "xl" = small, large or extra large
     backdrop=True,  # Modal to not be closed by clicking on backdrop
-    scrollable=True,  # Scrollable in case of large amount of text
     centered=True,  # Vertically center modal 
     fade=True,  # True, False
     )
@@ -203,12 +216,12 @@ form_add =  html.Div(className='container', children=[
                             html.Div(className='row', children=[
                                 dcc.Input(id='a-number', type='number', className='input-style-s', autoComplete='off'),
                                 html.Button(id='set-id-button', className='small-button', children=[
-                                    html.I(className='fa fa-asterisk fa-s'),
+                                    html.I(className='fa fa-asterisk fa-xs'),
                                     # tooltip
                                     html.Span(className='tooltip', children=['Generar #']),
                                 ]),
                                 html.Button(id='check-id-button', className='small-button', children=[
-                                    html.I(className='fa fa-check-circle fa-s'),
+                                    html.I(className='fa fa-check-circle fa-xs'),
                                     # tooltip
                                     html.Span(className='tooltip', children=['Verificar #']),
                                 ]),
@@ -265,36 +278,54 @@ form_add =  html.Div(className='container', children=[
                 html.Div(className='button-container', children=[
                     html.Button('AGREGAR', id='button-agregar', className='large-button'),
                     html.Button('LIMPIAR', id='button-limpiar2', className='large-button'),
-                    html.Button('MODIFICAR', id='button-modificar2', className='large-button'),
-                    html.Button('ELIMINAR', id='button-eliminar2', className='large-button'),
+                    html.Button('MODIFICAR', id='button-modificar2', className='large-button', disabled=True),
+                    html.Button('ELIMINAR', id='button-eliminar2', className='large-button', disabled=True),
                 ]),
             ])
 
 ## Adding a tab container to switch between the searching form and adding form
-tabs =  dcc.Tabs(
-            id="tabs-main",
-            value='form',
-            parent_className='tabs-container',
-            className='tabs',
-            content_className='tabs-content',
-            children=[
-                dcc.Tab(
-                    ## Tab for searching
-                    label='Formulario',
-                    value='form',
-                    className='tab',
-                    selected_className='tab-selected',
-                    children=[form, form_modal] ## Form variable
-                ),
-                dcc.Tab(
-                    label='Agregar',
-                    value='agregar',
-                    className='tab',
-                    selected_className='tab-selected',
-                    children=[form_add] ## Add form variable
-                ),
-            ]
-        )
+tabs =  html.Div(className='column', children=[
+            dcc.Tabs(
+                id="tabs-main",
+                value='form',
+                parent_className='tabs-container',
+                className='tabs',
+                content_className='tabs-content',
+                children=[
+                    dcc.Tab(
+                        ## Tab for searching
+                        label='Formulario',
+                        value='form',
+                        className='tab',
+                        selected_className='tab-selected',
+                        children=[form] ## Form variable
+                    ),
+                    dcc.Tab(
+                        label='Agregar',
+                        value='agregar',
+                        className='tab',
+                        selected_className='tab-selected',
+                        children=[form_add] ## Add form variable
+                    ),
+                ]
+            ),
+            form_modal
+        ])
+
+
+@app.callback(
+    [Output('connection-good', 'style'), Output('connection-bad', 'style')],
+    [Input('tabs-main', 'value')],
+    [State('connection-good', 'style'), State('connection-bad', 'style')] 
+)
+def connection_check(tab, good, bad):
+    try:
+        conn = mysql.connector.connect(**keys.config)
+        connection = conn.is_connected()
+        conn.close()
+        if connection: return [{}, bad]
+        else: return [good, {}]
+    except: return [good, {}]
 
 
 ## Callbacks / Actions / Updates
@@ -309,7 +340,7 @@ tabs =  dcc.Tabs(
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
     State('f-cedula', 'value'), State('f-fechanac', 'date')]
 )
-def button_buscar_click(search_click, clean_click, search_option, ap1, ap2, nom, ced, fnac):
+def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fnac):
     triggered_id = ctx.triggered_id
     if triggered_id=='button-limpiar1' or triggered_id==None:
         return [], '', '', '', '', ''

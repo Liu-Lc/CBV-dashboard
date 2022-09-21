@@ -117,7 +117,7 @@
     display: flex;
     -ms-flex-direction: column;
     flex-direction: column;
-    width: 500px;
+    width: 100%;
     pointer-events: auto;
     background-color: #fff;
     background-clip: padding-box;
@@ -227,13 +227,14 @@ padding: 1rem;
 }
 
 @media (min-width: 992px) {
-    .modal-lg,
+    .modal-lg { max-width: 500px; }
     .modal-xl {
         max-width: 800px;
     }
 }
 
 @media (min-width: 1200px) {
+    .modal-lg { max-width: 800px; }
     .modal-xl {
         max-width: 1140px;
     }

@@ -180,6 +180,13 @@
   width: 200px;
   cursor: pointer;
 }
+.square-button-m {
+  font-size: 15px;
+  padding: 2px;
+  height: 30px;
+  width: 30px;
+  cursor: pointer;
+}
 .small-button {
   font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
   font-size: 15px;
@@ -202,7 +209,7 @@
   /* Position the tooltip */
   position: absolute;
   z-index: 1;
-  top: 10%;
+  top: 25%;
   margin-left: -60px; /* Use half of the width (120/2 = 60), to center the tooltip */
 }
 .small-button:hover .tooltip {
@@ -264,9 +271,22 @@
   background-color: #FFFFFF;
 }
 
-.fa-s {
-  width: 15px;
-  height: 15px;
+.fa-green {
+  margin: 0px 8px;
+  color: green;
+}
+
+.fa-red {
+  margin: 0px 8px;
+  color: darkred;
+}
+
+.size-small {
+  font-size: 10px;
+}
+
+.right {
+  justify-content: flex-end;
 }
 
 .one.column,
