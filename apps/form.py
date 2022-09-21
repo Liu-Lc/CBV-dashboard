@@ -437,10 +437,13 @@ def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fna
             cursor.close()
             conn.close()
             ## Returns results in a dataframe to output object that is the DataTable
-            return pd.DataFrame(results, 
+            return [pd.DataFrame(results, 
                     columns=['id', 'apellido', 'nombre', 
-                        'cedula', 'fecha_nac', 'number']).to_dict('records'), ap1, ap2, nom, ced, fnac
+                    'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
+                    ap1, ap2, nom, ced, fnac]
         else: return [], ap1, ap2, nom, ced, fnac
+    return [], ap1, ap2, nom, ced, fnac
+
 
 @app.callback(
     ## App callback to add a record
@@ -489,7 +492,7 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             try:
                 results = fetch_sql(mysql.connector.connect(**keys.config), 
                         f'''SELECT * FROM clinica WHERE (APELLIDO = '{ap}' AND NOMBRE = '{nom}') 
-                        OR (CEDULA = '{ced}' AND CEDULA != '') OR NO = '{number}';''')
+                        AND (CEDULA = '{ced}' AND CEDULA != '') OR NO = '{number}';''')
             except:
                 return data, ap, nom, ced, fnac, number, num_class, True, 'Error: No connection.'
             if results==None: # If the select statement returns None, means theres no similar record
@@ -500,8 +503,8 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                     result1, e = insert_sql(mysql.connector.connect(**keys.config),
                         'clinica', values=values)
                     result2, e = insert_sql(mysql.connector.connect(**keys.config),
-                        columns=''' TRANSACTION, APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO ''' 
-                        'movements', values=''' 'ADD',''' + values)
+                        columns=''' TRANSACTION, APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO ''',
+                        table='movements', values=''' 'ADD',''' + values)
                     if result1 and result2:
                         results = (None, '', '', '', 'Null', '', num_class, False, '')
                     else: raise e
@@ -521,7 +524,6 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             except Exception as e:
                 print(f'Error updating data table. {e}')
                 return (data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.')
-            print(results)
             return results
     elif triggered_id=='button-limpiar2':
         results = fetch_sql(mysql.connector.connect(**keys.config),
@@ -535,10 +537,13 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
     elif triggered_id=='tabs-main':
         if tab=='agregar':
             results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
-                query=f'''SELECT * FROM added WHERE No>{config['last_num']};''')
-            return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
-                'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
-                None, None, None, None, None, num_class, False, message]
+                query=f'''SELECT * FROM movements WHERE No>{config['last_num']};''')
+            if results==None:
+                return [[], None, None, None, None, None, num_class, False, message]
+            else:
+                return [pd.DataFrame(results, columns=['id', 'transaction', 'apellido', 'nombre', 
+                    'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
+                    None, None, None, None, None, num_class, False, message]
     return data, ap, nom, ced, fnac, number, num_class, False, message
 
 @app.callback(
