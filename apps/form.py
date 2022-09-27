@@ -60,26 +60,37 @@ def insert_sql(conn, table, columns='APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO', v
         cursor.close()
         conn.close()
 
-## Title and Links for styles and fonts
-header = html.Div([
-            html.Link(rel="stylesheet",
-                href="https://fonts.googleapis.com/css?family=Montserrat"),
-            html.Link(rel="stylesheet",
-                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"),
-            html.Div(className='column', children=[
-                html.H1('Formulario'),
-                html.Hr(),
-                html.Div(className='row right', children=[
-                    dcc.Loading(id='loading-connection', type='circle', children=[
-                        html.I(className='fa fa-square-check fa-green', id='connection-good', style={'display':'none'}),
-                        html.I(className='fa fa-square-xmark fa-red', id='connection-bad', style={'display':'none'}),
-                    ], className='size-small'),
-                    html.Spacer(),
-                    html.Span('Conexión', className='right'),
-                ]),
-            ]),
-            html.Spacer(),
-        ])
+
+def modify_sql(conn, table, id, apellido, nombre, cedula, fecha, exp):
+    """ Executes update query on MySQL connection.
+
+    Args:
+        conn (mysql.connection): MySQL database connection
+        table (string): table name
+        id (int or string): record id to modify
+        apellido (string): value
+        nombre (string): value
+        cedula (string): value
+        fecha (string or datetime): value
+        exp (int or string): value
+
+    Returns:
+        array: returns array with True or False value and an empty string or exception description respectively.
+    """     
+    try:
+        update_query = f'''UPDATE {table} SET APELLIDO = UPPER('{apellido}'), 
+            NOMBRE = UPPER('{nombre}'), CEDULA = '{cedula}', FECHA_NAC = '{fecha}',
+            NO = {exp} WHERE ID = {id}; '''
+        cursor = conn.cursor()
+        cursor.execute(update_query)
+        return [True, '']
+    except Exception as e:
+        return [False, e]
+    finally:
+        conn.commit()
+        cursor.close()
+        conn.close()
+
 
 ## Variable to initialize the complete form. Check styles for classNames.
 form =  html.Div(className='container', children=[
@@ -311,21 +322,6 @@ tabs =  html.Div(className='column', children=[
             ),
             form_modal
         ])
-
-
-@app.callback(
-    [Output('connection-good', 'style'), Output('connection-bad', 'style')],
-    [Input('tabs-main', 'value')],
-    [State('connection-good', 'style'), State('connection-bad', 'style')] 
-)
-def connection_check(tab, good, bad):
-    try:
-        conn = mysql.connector.connect(**keys.config)
-        connection = conn.is_connected()
-        conn.close()
-        if connection: return [{}, bad]
-        else: return [good, {}]
-    except: return [good, {}]
 
 
 ## Callbacks / Actions / Updates

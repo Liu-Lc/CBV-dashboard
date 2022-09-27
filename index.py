@@ -8,13 +8,35 @@ Created on Sunday, July 4, 2021, 19:39
 
 
 from dash import dcc, html, callback_context as ctx
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from app import app, auth
 from apps import form, ver
+import mysql.connector
+from otros import keys
 
+
+header = html.Div([
+            html.Link(rel="stylesheet",
+                href="https://fonts.googleapis.com/css?family=Montserrat"),
+            html.Link(rel="stylesheet",
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"),
+            html.Div(className='column', children=[
+                html.H1('Formulario'),
+                html.Hr(),
+                html.Div(className='row right', children=[
+                    dcc.Loading(id='loading-connection', type='circle', children=[
+                        html.I(className='fa fa-square-check fa-green', id='connection-good', style={'display':'none'}),
+                        html.I(className='fa fa-square-xmark fa-red', id='connection-bad', style={'display':'none'}),
+                    ], className='size-small'),
+                    html.Spacer(),
+                    html.Span('Conexión', className='right'),
+                ]),
+            ]),
+            html.Spacer(),
+        ])
 
 app.layout = html.Div(className='mainContainer', children=[
-    form.header,
+    header,
     html.Div([
         html.Div(id='side-panel', className='side-panel', 
             children=[
@@ -39,6 +61,20 @@ app.layout = html.Div(className='mainContainer', children=[
     html.Div(id='content-page', children=[]),
 ])
 
+
+@app.callback(
+    [Output('connection-good', 'style'), Output('connection-bad', 'style')],
+    [Input('tabs-main', 'value')],
+    [State('connection-good', 'style'), State('connection-bad', 'style')] 
+)
+def connection_check(tab, good, bad):
+    try:
+        conn = mysql.connector.connect(**keys.config)
+        connection = conn.is_connected()
+        conn.close()
+        if connection: return [{}, bad]
+        else: return [good, {}]
+    except: return [good, {}]
 
 @app.callback(
     Output('side-panel', 'style'),
