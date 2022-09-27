@@ -329,11 +329,11 @@ tabs =  html.Div(className='column', children=[
     [Output('table-buscar', 'data'), Output('f-apellido1', 'value'),
     Output('f-apellido2', 'value'), Output('f-nombre', 'value'), 
     Output('f-cedula', 'value'), Output('f-fechanac', 'value'),],
-    [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks'),],
+    [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks'),
     # Takes data from textboxes
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
-    State('f-cedula', 'value'), State('f-fechanac', 'date')]
+    State('f-cedula', 'value'), State('f-fechanac', 'date'),
 )
 def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fnac):
     triggered_id = ctx.triggered_id
@@ -347,63 +347,39 @@ def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fna
         ## Searching for any last name, first name, ID or birthdate.
         if ( not isempty(ap1) or not isempty(ap2) or
                 not isempty(nom) and not isempty(ced) or 
-            not isempty(nom) and not isempty(ced) or 
+                not isempty(nom) and not isempty(ced) or 
                 not isempty(nom) and not isempty(ced) or 
                 not isempty(fnac) ):
             ## Switching between search option selection
             if search_option=='ambigua':
                 query = 'call'
-                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced):
-                    ## apellido 1
-                    proc = 'B_1AP'
-                    args = (ap1, )
-                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
-                    ## apellido 2
-                    proc = 'B_2AP'
-                    args = (ap1, ap2)
-                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
-                    ## apellido 1 nombre
-                    proc = 'B_NOMAP1'
-                    args = (ap1, nom)
-                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
-                    ## apellido 2 nombre
-                    proc = 'B_NOMAP2'
-                    args = (ap1, ap2, nom)
-                elif not isempty(ced) :
-                    ## cedula
-                    proc = 'B_CED'
-                    args = (ced, )
-                elif not isempty(fnac) :
-                    ## fecha
-                    proc = 'B_FECHA'
-                    args = (fnac, )
+                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
+                    proc = 'B_1AP'; args = (ap1, )
+                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
+                    proc = 'B_2AP'; args = (ap1, ap2)
+                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
+                    proc = 'B_NOMAP1'; args = (ap1, nom)
+                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 2 nombre
+                    proc = 'B_NOMAP2'; args = (ap1, ap2, nom)
+                elif not isempty(ced): ## cedula
+                    proc = 'B_CED'; args = (ced, )
+                elif not isempty(fnac): ## fecha
+                    proc = 'B_FECHA'; args = (fnac, )
                 else: pass
             elif search_option=='precisa':
                 query = 'call'
-                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced) :
-                    ## apellido 1
-                    proc = 'BUSCAR1AP'
-                    args = (ap1, )
-                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced) :
-                    ## apellido 2
-                    proc = 'BUSCAR2AP'
-                    args = (ap1, ap2)
-                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced) :
-                    ## apellido 1 nombre
-                    proc = 'BUSCARNOMAP1'
-                    args = (ap1, nom)
-                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced) :
-                    ## apellido 2 nombre
-                    proc = 'BUSCARNOMAP2'
-                    args = (ap1, ap2, nom)
-                elif not isempty(ced) :
-                    ## cedula
-                    proc = 'BUSCARCED'
-                    args = (ced, )
-                elif not isempty(fnac) :
-                    ## fecha
-                    proc = 'BUSCARFECHA'
-                    args = (fnac, )
+                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
+                    proc = 'BUSCAR1AP'; args = (ap1, )
+                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
+                    proc = 'BUSCAR2AP'; args = (ap1, ap2)
+                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
+                    proc = 'BUSCARNOMAP1'; args = (ap1, nom)
+                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced):  ## apellido 2 nombre
+                    proc = 'BUSCARNOMAP2'; args = (ap1, ap2, nom)
+                elif not isempty(ced): ## cedula
+                    proc = 'BUSCARCED'; args = (ced, )
+                elif not isempty(fnac): ## fecha
+                    proc = 'BUSCARFECHA'; args = (fnac, )
                 else: pass
             elif search_option=='exacta':
                 q = []
