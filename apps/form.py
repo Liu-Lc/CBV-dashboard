@@ -52,9 +52,9 @@ def insert_sql(conn, table, columns='APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO', v
         insert_query = f'''INSERT INTO %s ({columns}) VALUES({values});'''
         cursor = conn.cursor(buffered=True)
         cursor.execute(insert_query % table)
-        return True, None
+        return [True, cursor.lastrowid]
     except Exception as e:
-        return False, e
+        return [False, e]
     finally:
         conn.commit()
         cursor.close()
@@ -136,7 +136,7 @@ form =  html.Div(className='container', children=[
                                 {'id':'apellido', 'name':'Apellido'},
                                 {'id':'nombre', 'name':'Nombre'},
                                 {'id':'cedula', 'name':'Cédula'},
-                                {'id':'fechanac', 'name':'F. Nac.'},
+                                {'id':'fecha_nac', 'name':'F. Nac.'},
                                 {'id':'number', 'name':'No.'},
                             ],
                             fixed_rows={'headers': True},
@@ -173,8 +173,6 @@ form_modal = html.Div(children=[
         html.P(className='spacer'),
         html.Div(className='modal-row', children=[
             html.Span('No.', className='label'),
-            dcc.Input(className='input-style', id='modal-number', 
-                dcc.Input(className='input-style', id='modal-number', 
             dcc.Input(className='input-style', id='modal-number', 
                 type='number', autoComplete='off'),
         ]),
@@ -256,30 +254,33 @@ form_add =  html.Div(className='container', children=[
                     ]),
                     ## Data Table for results
                     html.Div(className='two-thirds column table', children=[
-                        table.DataTable(id='table-agregar', 
-                            columns=[
-                                {'id':'apellido', 'name':'Apellido'},
-                                {'id':'nombre', 'name':'Nombre'},
-                                {'id':'cedula', 'name':'Cédula'},
-                                {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
-                                {'id':'number', 'name':'No.'},
-                            ],
-                            fixed_rows={'headers': True},
-                            # page_action='none',
-                            page_size=150,
-                            style_table={'height': '400px', 'overflowY': 'auto'},
-                            # style_header={'textAlign': 'center'},
-                            style_cell_conditional=[
-                                {'if': {'column_id': c},
-                                    'width': '8%'} for c in ['id', 'number']
-                            ] + [
-                                {'if': {'column_id': 'cedula'},
-                                    'width': '15%'},
-                                {'if': {'column_id': 'fechanac'},
-                                    'width': '12%'} ,
-                            ],
-                            style_cell={'textAlign': 'center', 'min-width': '50px'},
-                        ),
+                        dcc.Loading(id='loading-table', type='default', children=[
+                            table.DataTable(id='table-agregar', 
+                                columns=[
+                                    {'id':'id', 'name':'id'},
+                                    {'id':'apellido', 'name':'Apellido'},
+                                    {'id':'nombre', 'name':'Nombre'},
+                                    {'id':'cedula', 'name':'Cédula'},
+                                    {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
+                                    {'id':'number', 'name':'No.'},
+                                ],
+                                fixed_rows={'headers': True},
+                                page_action='none',
+                                page_size=150,
+                                style_table={'height': '400px', 'overflowY': 'auto'},
+                                # style_header={'textAlign': 'center'},
+                                style_cell_conditional=[
+                                    {'if': {'column_id': c},
+                                        'width': '8%'} for c in ['id', 'number']
+                                ] + [
+                                    {'if': {'column_id': 'cedula'},
+                                        'width': '15%'},
+                                    {'if': {'column_id': 'fechanac'},
+                                        'width': '12%'} ,
+                                ],
+                                style_cell={'textAlign': 'center', 'min-width': '50px'},
+                            ),
+                        ]),
                     ]),
                 ]),
                 ## Buttons section at lower side
@@ -478,7 +479,7 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
     elif triggered_id=='button-agregar':
         ### Pressing add button
         # check if all fields are complete
-        if ap==None or ap=='' or nom==None or nom=='' or ced==None or ced=='' or fnac==None or number==None or number=='':
+        if ( isempty(ap) or isempty(nom) or isempty(ced) or isempty(fnac) or isempty(number) ):
             # Returns True to displayed message for empty fields
             return data, ap, nom, ced, fnac, number, num_class, True, 'Faltan campos por rellenar.'
         else:
@@ -496,12 +497,13 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                     values = f''' '{ap}', '{nom}', '{ced}', '{fnac}', {number}'''
                     result1, e = insert_sql(mysql.connector.connect(**keys.config),
                         'clinica', values=values)
-                    result2, e = insert_sql(mysql.connector.connect(**keys.config),
-                        columns=''' TRANSACTION, APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO ''',
-                        table='movements', values=''' 'ADD',''' + values)
-                    if result1 and result2:
-                        results = (None, '', '', '', 'Null', '', num_class, False, '')
+                    if result1:
+                        result2, e = insert_sql(mysql.connector.connect(**keys.config),
+                            columns=''' ID, TRANSACTION, APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO ''',
+                            table='movements', values=f''' {e}, 'ADD',''' + values)
+                        if not result2: raise e
                     else: raise e
+                    results = [None, '', '', '', None, '', num_class, False, '']
                 except Exception as e:
                     print(f'Error inserting. {e}')
                     return (data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.')
@@ -514,10 +516,12 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                 data = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
                     query=f'''SELECT * FROM movements WHERE No>{config['last_num']} AND TRANSACTION='ADD';''')
                 # results = (data, ap, nom, ced, fnac, number, num_class, False, '')
-                results = (data, '', '', '', 'Null', '', num_class, False, '')
+                results = [pd.DataFrame(data, columns=['id', 'transaction', 'apellido', 'nombre', 
+                    'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
+                    '', '', '', None, '', num_class, False, '']
             except Exception as e:
                 print(f'Error updating data table. {e}')
-                return (data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.')
+                return [data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.']
             return results
     elif triggered_id=='button-limpiar2':
         results = fetch_sql(mysql.connector.connect(**keys.config),
