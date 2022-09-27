@@ -31,6 +31,9 @@ rootLogger.addHandler(fileHandler)
 rootLogger.addHandler(stdout_handler)
 rootLogger.setLevel(logging.INFO)
 
+## Variables
+config_file = 'otros/config.json'
+
 
 def isempty(field):
     return (field=='' or field==None)
@@ -432,7 +435,7 @@ def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fna
     State('a-number', 'className'), State('msg-empty-fields', 'message')]
 )
 def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom, ced, fnac, number, num_class, message):
-    config = json.load(open('assets/config.json'))
+    config = json.load(open(config_file))
     triggered_id = ctx.triggered_id
     if triggered_id=='check-id-button' and check_click!=None:
         ### Check number id button if already exists
@@ -505,7 +508,7 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
         # Create dictionary variable with max number
         config = {'last_num':results[0]}
         # Dump json of dictionary into config file
-        json.dump(config, open('assets/config.json', 'w'))
+        json.dump(config, open(config_file, 'w'))
         # drop everything from table added
         return None, None, None, None, None, None, num_class, False, message
     elif triggered_id=='tabs-main':
