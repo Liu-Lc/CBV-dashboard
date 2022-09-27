@@ -8,7 +8,7 @@ Created on Sunday, July 6, 2021, 08:32
 
 
 from dash import dcc, html, dash_table as table, callback_context as ctx
-import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import mysql.connector
 import pandas as pd
 import os, sys, logging, datetime, json
@@ -114,8 +114,8 @@ form =  html.Div(className='container', children=[
                     ]),
                     html.Div(className='row', children=[
                         html.Span('Fecha de nacimiento', className='label'),
-                        dcc.DatePickerSingle(id='f-fechanac', className='input-style',
-                            clearable=True, display_format='DD/MM/YYYY'),
+                        dmc.DatePicker(id='f-fechanac', class_name='input-style', 
+                            inputFormat='DD/MM/YYYY', clearable=True),
                     ]),
                     html.P('', className='spacer'),
                     ## Type of search radio selection
@@ -168,51 +168,48 @@ form =  html.Div(className='container', children=[
         ])
 
 form_modal = html.Div(children=[
-    dbc.Modal([
-        dbc.ModalHeader([
-            dbc.ModalTitle("Modificar Registro"),
-            html.Button(id='close-modificar', className='square-button-m', children=[
-                html.I(className='fa fa-close fa-xl')
-            ]),
-        ], close_button=False),
-        dbc.ModalBody(children=[
-            html.Div(className='modal-row', children=[
-                html.Span('No.', className='label'),
+    dmc.Modal([
+        dmc.Title('Modificar Registro', order=3),
+        html.P(className='spacer'),
+        html.Div(className='modal-row', children=[
+            html.Span('No.', className='label'),
+            dcc.Input(className='input-style', id='modal-number', 
                 dcc.Input(className='input-style', id='modal-number', 
-                    type='number', autoComplete='off'),
-            ]),
-            html.P('', className='spacer'),
-            html.Div(className='modal-row', children=[
-                html.Span('Apellidos', className='label'),
-                dcc.Input(className='input-style-m', id='modal-apellido', autoComplete='off'),
-            ]),
-            html.Div(className='modal-row', children=[
-                html.Span('Nombre', className='label'),
-                dcc.Input(className='input-style-m', id='modal-nombre', autoComplete='off'),
-            ]),
-            html.Div(className='modal-row', children=[
-                html.Span('Cédula', className='label'),
-                dcc.Input(className='input-style-m', id='modal-cedula', autoComplete='off'),
-            ]),
-            html.Div(className='modal-row', children=[
-                html.Span('Fecha de nacimiento', className='label'),
-                dcc.DatePickerSingle(className='input-style-m',id='modal-fechanac', 
-                    clearable=True, display_format='DD/MM/YYYY'),
-            ]),
-            # dbc.Button('Close', id='modificar-close', className='ml-auto')
-            html.Div(className='button-container', children=[
-                html.Button('MODIFICAR', id='button-modificar', className='large-button'),
-                html.Button('RESTAURAR', id='button-restaurar', className='large-button'),
-            ])
+            dcc.Input(className='input-style', id='modal-number', 
+                type='number', autoComplete='off'),
         ]),
-    ],
-    id="modal", # Give the modal an id name 
-    is_open=False,  # Open the modal at opening the webpage.
-    size="lg",  # "sm", "lg", "xl" = small, large or extra large
-    backdrop=True,  # Modal to not be closed by clicking on backdrop
-    centered=True,  # Vertically center modal 
-    fade=True,  # True, False
-    )
+        html.P('', className='spacer'),
+        html.Div(className='modal-row', children=[
+            html.Span('Apellidos', className='label'),
+            dcc.Input(className='input-style-m', id='modal-apellido', autoComplete='off'),
+        ]),
+        html.Div(className='modal-row', children=[
+            html.Span('Nombre', className='label'),
+            dcc.Input(className='input-style-m', id='modal-nombre', autoComplete='off'),
+        ]),
+        html.Div(className='modal-row', children=[
+            html.Span('Cédula', className='label'),
+            dcc.Input(className='input-style-m', id='modal-cedula', autoComplete='off'),
+        ]),
+        html.Div(className='modal-row', children=[
+            html.Span('Fecha de nacimiento', className='label'),
+            dmc.DatePicker(id='modal-fechanac', class_name='input-style',
+                        inputFormat='DD/MM/YYYY')
+            # dcc.DatePickerSingle(className='input-style-m', id='modal-fechanac', 
+            #             display_format='DD/MM/YYYY'),
+        ]),
+        html.Div(className='button-container', children=[
+            html.Button('MODIFICAR', id='button-modificar', className='large-button'),
+            html.Button('RESTAURAR', id='button-restaurar', className='large-button'),
+        ])
+    ], id='modal', size='lg', centered=True, opened=False)
+])
+
+error_modal = html.Div([
+    dmc.Modal([
+        dmc.Title('Error', order=3),
+        dmc.Text('')
+    ], id='error-modal', size='md', centered=True, opened=False),
 ])
 
 ## Variable for adding records form
@@ -252,8 +249,8 @@ form_add =  html.Div(className='container', children=[
                         ]),
                         html.Div(className='row', children=[
                             html.Span('Fecha de nacimiento', className='label'),
-                            dcc.DatePickerSingle(id='a-fechanac', className='input-style',
-                                clearable=True, display_format='DD/MM/YYYY'),
+                            dmc.DatePicker(id='a-fechanac', class_name='input-style', 
+                                inputFormat='DD/MM/YYYY', clearable=True),
                         ]),
                         html.P('', className='spacer'),
                     ]),
@@ -320,7 +317,8 @@ tabs =  html.Div(className='column', children=[
                     ),
                 ]
             ),
-            form_modal
+            form_modal,
+            error_modal
         ])
 
 
@@ -544,19 +542,15 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
 
 
 @app.callback(
-    [Output('modal', 'is_open'), Output('modal-number', 'value'),
+    [Output('modal', 'opened'), Output('modal-number', 'value'),
     Output('modal-apellido', 'value'), Output('modal-nombre', 'value'),
     Output('modal-cedula', 'value'), Output('modal-fechanac', 'value')],
-    [Input('button-modificar1', 'n_clicks'), Input('button-modificar2', 'n_clicks'),
-    Input('close-modificar', 'n_clicks'), Input('button-restaurar', 'n_clicks')],
-    [State('modal', 'is_open'), State('tabs-main', 'value'), 
-    State('table-buscar', 'active_cell'), State('table-buscar', 'data'),
-    State('table-agregar', 'active_cell'), State('table-agregar', 'data')]
+    [Input('button-modificar1', 'n_clicks'), Input('button-restaurar', 'n_clicks')],
+    [State('modal', 'opened'), State('table-buscar', 'active_cell'), 
+    State('table-buscar', 'data'), ]
 )
-def show_modificar(form_open, add_open, close, restaurar, is_open, tab, form_cell, form_rows, add_cell, add_rows):
+def show_modificar(form_open, restaurar, is_open, cell, rows):
     triggered_id = ctx.triggered_id
-    if tab=='form': rows = form_rows; cell = form_cell
-    elif tab=='agregar': rows = add_rows; cell = add_cell
     if triggered_id=='button-restaurar':
         # Restore the value to original
         data = pd.DataFrame(rows, columns=['id', 'apellido', 'nombre', 
@@ -565,14 +559,11 @@ def show_modificar(form_open, add_open, close, restaurar, is_open, tab, form_cel
         return is_open, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
     else:
         # When the modal initializates
-        if (form_open or add_open) and cell!=None:
+        if form_open and cell!=None:
             data = pd.DataFrame(rows, columns=['id', 'apellido', 'nombre', 
                             'cedula', 'fecha_nac', 'number'])
             row = data[data.id==cell['row_id']].squeeze()
             # Shows the information from the selected row into the modal
             return not is_open, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
-        elif close: 
-            # Closes the modal and returns None (clears all)
-            return not is_open, None, None, None, None, None
     return is_open, None, None, None, None, None
 
