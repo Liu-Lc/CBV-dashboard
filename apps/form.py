@@ -583,19 +583,13 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
 )
 def show_modificar(form_open, restaurar, is_open, cell, rows):
     triggered_id = ctx.triggered_id
-    if triggered_id=='button-restaurar':
-        # Restore the value to original
+    if form_open and cell!=None and len(rows)>0:
         data = pd.DataFrame(rows, columns=['id', 'apellido', 'nombre', 
-                    'cedula', 'fecha_nac', 'number'])
+                        'cedula', 'fecha_nac', 'number'])
         row = data[data.id==cell['row_id']].squeeze()
-        return is_open, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
-    else:
-        # When the modal initializates
-        if form_open and cell!=None:
-            data = pd.DataFrame(rows, columns=['id', 'apellido', 'nombre', 
-                            'cedula', 'fecha_nac', 'number'])
-            row = data[data.id==cell['row_id']].squeeze()
-            # Shows the information from the selected row into the modal
-            return not is_open, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
+        # modal open return value depending on callback trigger
+        open_value = is_open if triggered_id=='button-restaurar' else not is_open
+        # Shows the information from the selected row into the modal
+        return open_value, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
     return is_open, None, None, None, None, None
 
