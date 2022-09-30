@@ -38,6 +38,72 @@ config_file = 'otros/config.json'
 def isempty(field):
     return (field=='' or field==None)
 
+def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime):
+    """ Generates the query or procedure call command to search a record depending on the type of search option.
+
+    Args:
+        search_option (str): type of search
+        ap1 (string): first surname
+        ap2 (string): second surname
+        nom (string): name
+        ced (string): personal identification number
+        fnac (datetime): birth date
+
+    Returns:
+        array: array with query, procedure call and arguments variables.
+    """    
+    query = ''; proc = ''; args = ()
+    ## Searching for any last name, first name, ID or birthdate.
+    if ( not isempty(ap1) or not isempty(ap2) or
+            not isempty(nom) and not isempty(ced) or 
+            not isempty(nom) and not isempty(ced) or 
+            not isempty(nom) and not isempty(ced) or 
+            not isempty(fnac) ):
+        ## Switching between search option selection
+        if search_option=='ambigua':
+            query = 'call'
+            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
+                proc = 'B_1AP'; args = (ap1, )
+            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
+                proc = 'B_2AP'; args = (ap1, ap2)
+            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
+                proc = 'B_NOMAP1'; args = (ap1, nom)
+            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 2 nombre
+                proc = 'B_NOMAP2'; args = (ap1, ap2, nom)
+            elif not isempty(ced): ## cedula
+                proc = 'B_CED'; args = (ced, )
+            elif not isempty(fnac): ## fecha
+                proc = 'B_FECHA'; args = (fnac, )
+            else: pass
+        elif search_option=='precisa':
+            query = 'call'
+            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
+                proc = 'BUSCAR1AP'; args = (ap1, )
+            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
+                proc = 'BUSCAR2AP'; args = (ap1, ap2)
+            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
+                proc = 'BUSCARNOMAP1'; args = (ap1, nom)
+            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced):  ## apellido 2 nombre
+                proc = 'BUSCARNOMAP2'; args = (ap1, ap2, nom)
+            elif not isempty(ced): ## cedula
+                proc = 'BUSCARCED'; args = (ced, )
+            elif not isempty(fnac): ## fecha
+                proc = 'BUSCARFECHA'; args = (fnac, )
+            else: pass
+        elif search_option=='exacta':
+            q = []
+            q.append('select * from clinica ')
+            # Appends sentence depending on fields with contents
+            if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
+            if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
+            if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
+            if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
+            if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
+            query = q[0]
+            if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
+            query += '\norder by APELLIDO, NOMBRE; '
+    return query, proc, args
+
 def fetch_sql(conn, query, fetch=1, buffer=True):
     try:
         cursor = conn.cursor(buffered=buffer)
@@ -62,7 +128,6 @@ def insert_sql(conn, table, columns='APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO', v
         conn.commit()
         cursor.close()
         conn.close()
-
 
 def modify_sql(conn, table, id, apellido, nombre, cedula, fecha, exp):
     """ Executes update query on MySQL connection.
@@ -196,8 +261,6 @@ form_modal = html.Div(children=[
             html.Span('Fecha de nacimiento', className='label'),
             dmc.DatePicker(id='modal-fechanac', class_name='input-style',
                         inputFormat='DD/MM/YYYY')
-            # dcc.DatePickerSingle(className='input-style-m', id='modal-fechanac', 
-            #             display_format='DD/MM/YYYY'),
         ]),
         html.Div(className='button-container', children=[
             html.Button('MODIFICAR', id='button-modificar', className='large-button'),
@@ -209,7 +272,7 @@ form_modal = html.Div(children=[
 error_modal = html.Div([
     dmc.Modal([
         dmc.Title('Error', order=3),
-        dmc.Text('')
+        dmc.Text('', id='error-modal-text')
     ], id='error-modal', size='md', centered=True, opened=False),
 ])
 
@@ -345,58 +408,8 @@ def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fna
     elif triggered_id=='button-buscar':
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
-        # Initialize variables
-        query = ''; proc = ''; args = ()
-        ## Searching for any last name, first name, ID or birthdate.
-        if ( not isempty(ap1) or not isempty(ap2) or
-                not isempty(nom) and not isempty(ced) or 
-                not isempty(nom) and not isempty(ced) or 
-                not isempty(nom) and not isempty(ced) or 
-                not isempty(fnac) ):
-            ## Switching between search option selection
-            if search_option=='ambigua':
-                query = 'call'
-                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
-                    proc = 'B_1AP'; args = (ap1, )
-                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
-                    proc = 'B_2AP'; args = (ap1, ap2)
-                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
-                    proc = 'B_NOMAP1'; args = (ap1, nom)
-                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 2 nombre
-                    proc = 'B_NOMAP2'; args = (ap1, ap2, nom)
-                elif not isempty(ced): ## cedula
-                    proc = 'B_CED'; args = (ced, )
-                elif not isempty(fnac): ## fecha
-                    proc = 'B_FECHA'; args = (fnac, )
-                else: pass
-            elif search_option=='precisa':
-                query = 'call'
-                if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
-                    proc = 'BUSCAR1AP'; args = (ap1, )
-                elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
-                    proc = 'BUSCAR2AP'; args = (ap1, ap2)
-                elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
-                    proc = 'BUSCARNOMAP1'; args = (ap1, nom)
-                elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced):  ## apellido 2 nombre
-                    proc = 'BUSCARNOMAP2'; args = (ap1, ap2, nom)
-                elif not isempty(ced): ## cedula
-                    proc = 'BUSCARCED'; args = (ced, )
-                elif not isempty(fnac): ## fecha
-                    proc = 'BUSCARFECHA'; args = (fnac, )
-                else: pass
-            elif search_option=='exacta':
-                q = []
-                q.append('select * from clinica ')
-                # Appends sentence depending on fields with contents
-                if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
-                if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
-                if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
-                if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
-                if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
-                query = q[0]
-                if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
-                query += '\norder by APELLIDO, NOMBRE; '
-        
+        # Generate query or procedure call
+        query, proc, args = generate_search_query(search_option, ap1, ap2, nom, ced, fnac)
         # After creating the query, cursor is created
         if query!='':
             cursor = conn.cursor()
