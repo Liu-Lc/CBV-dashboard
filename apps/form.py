@@ -394,18 +394,55 @@ tabs =  html.Div(className='column', children=[
     ## App callback to bring results to table when pressing search button
     [Output('table-buscar', 'data'), Output('f-apellido1', 'value'),
     Output('f-apellido2', 'value'), Output('f-nombre', 'value'), 
-    Output('f-cedula', 'value'), Output('f-fechanac', 'value'),],
+    Output('f-cedula', 'value'), Output('f-fechanac', 'value'),
+    Output('modal', 'opened'), 
+    Output('error-modal', 'opened'), Output('error-modal-text', 'children')],
     [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks'),
+    Input('button-modificar', 'n_clicks')],
     # Takes data from textboxes
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
     State('f-cedula', 'value'), State('f-fechanac', 'date'),
+    State('modal', 'opened'), 
+    State('modal-apellido', 'value'), State('modal-nombre', 'value'), 
+    State('modal-cedula', 'value'), State('modal-fechanac', 'value'),
+    State('modal-number', 'value'), 
+    State('table-buscar', 'data'), State('table-buscar', 'active_cell')]
 )
-def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fnac):
+def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
     triggered_id = ctx.triggered_id
+    modified = False
+    ## put modify first with a separate if and use variable to control context trigger
+    if triggered_id=='button-modificar':
+        ## Update table for modificar action
+        if ( isempty(m_ap) or isempty(m_nom) or isempty(m_ced) or isempty(m_fnac) or isempty(m_num) ):
+            # Show modal error
+            print(m_ap, m_ced, m_fnac, m_nom, m_num)
+            return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
+                'Error. Faltan campos por rellenar.']
+        else:
+            print('modify pass')
+            # Update
+            results = fetch_sql(mysql.connector.connect(**keys.config),
+                f'''SELECT * FROM clinica WHERE ID != {cell['row_id']}
+                    AND ((APELLIDO = '{m_ap}' AND NOMBRE = '{m_nom}') 
+                        OR (CEDULA = '{m_ced}' AND CEDULA != '') OR NO = '{m_num}');''')
+            if results==None:
+                ## Can be modified
+                print('can be modified')
+                # cell['row_id']
+                modify, e = modify_sql(mysql.connector.connect(**keys.config),
+                    'clinica', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
+                if modify:
+                    print('record modified')
+                    modified = True
+                    pass
+            else: 
+                return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
+                f'Error. Ya existe un registro similar: \n{results}.']
     if triggered_id=='button-limpiar1' or triggered_id==None:
-        return [], '', '', '', '', ''
-    elif triggered_id=='button-buscar':
+        return [], '', '', '', '', '', False, False, ''
+    elif triggered_id=='button-buscar' or modified:
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
         # Generate query or procedure call
@@ -424,12 +461,11 @@ def search_tab(search_click, clean_click, search_option, ap1, ap2, nom, ced, fna
             cursor.close()
             conn.close()
             ## Returns results in a dataframe to output object that is the DataTable
-            return [pd.DataFrame(results, 
-                    columns=['id', 'apellido', 'nombre', 
+            return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
-                    ap1, ap2, nom, ced, fnac]
-        else: return [], ap1, ap2, nom, ced, fnac
-    return [], ap1, ap2, nom, ced, fnac
+                    ap1, ap2, nom, ced, fnac, False, False, '']
+        else: return buscar_data, ap1, ap2, nom, ced, fnac, False, False, ''
+    return buscar_data, ap1, ap2, nom, ced, fnac, False, False, ''
 
 
 @app.callback(
