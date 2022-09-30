@@ -389,24 +389,33 @@ tabs =  html.Div(className='column', children=[
         ])
 
 
-## Callbacks / Actions / Updates
+
+## Callbacks / Actions / Updates ##
+
+## App callback to bring results to table when pressing search button
 @app.callback(
-    ## App callback to bring results to table when pressing search button
-    [Output('table-buscar', 'data'), Output('f-apellido1', 'value'),
-    Output('f-apellido2', 'value'), Output('f-nombre', 'value'), 
-    Output('f-cedula', 'value'), Output('f-fechanac', 'value'),
+    [Output('table-buscar', 'data'), # Datatable results
+    # Form fields
+    Output('f-apellido1', 'value'), Output('f-apellido2', 'value'), 
+    Output('f-nombre', 'value'), Output('f-cedula', 'value'), 
+    Output('f-fechanac', 'value'),
+    # Modify modal
     Output('modal', 'opened'), 
+    # Error modal
     Output('error-modal', 'opened'), Output('error-modal-text', 'children')],
+    ## INPUTS
     [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks'),
     Input('button-modificar', 'n_clicks')],
-    # Takes data from textboxes
+    ## STATES
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
     State('f-cedula', 'value'), State('f-fechanac', 'date'),
+    # Modal states
     State('modal', 'opened'), 
     State('modal-apellido', 'value'), State('modal-nombre', 'value'), 
     State('modal-cedula', 'value'), State('modal-fechanac', 'value'),
     State('modal-number', 'value'), 
+    # Datatable States
     State('table-buscar', 'data'), State('table-buscar', 'active_cell')]
 )
 def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
@@ -468,19 +477,29 @@ def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2,
     return buscar_data, ap1, ap2, nom, ced, fnac, False, False, ''
 
 
+## App callback to add a record
 @app.callback(
-    ## App callback to add a record
-    [Output('table-agregar', 'data'), Output('a-apellido', 'value'),
-    Output('a-nombre', 'value'), Output('a-cedula', 'value'), 
-    Output('a-fechanac', 'value'), Output('a-number', 'value'), 
-    Output('a-number', 'className'), Output('msg-empty-fields', 'displayed'),
-    Output('msg-empty-fields', 'message')],
+    [Output('table-agregar', 'data'), # Datatable results
+    # Add tab fields
+    Output('a-apellido', 'value'), Output('a-nombre', 'value'), 
+    Output('a-cedula', 'value'), Output('a-fechanac', 'value'), 
+    Output('a-number', 'value'), Output('a-number', 'className'), 
+    # Message box
+    Output('msg-empty-fields', 'displayed'), Output('msg-empty-fields', 'message')],
+    ## INPUTS
+    # Small buttons
     [Input('check-id-button', 'n_clicks'), Input('set-id-button', 'n_clicks'), 
+    # Main buttons
     Input('button-agregar', 'n_clicks'), Input('button-limpiar2', 'n_clicks'),
+    # Tab
     Input('tabs-main', 'value')],
-    [State('table-agregar', 'data'), State('a-apellido', 'value'), 
-    State('a-nombre', 'value'), State('a-cedula', 'value'), 
-    State('a-fechanac', 'date'), State('a-number', 'value'), 
+    ## STATES
+    [State('table-agregar', 'data'), 
+    # Fields
+    State('a-apellido', 'value'), State('a-nombre', 'value'), 
+    State('a-cedula', 'value'), State('a-fechanac', 'date'), 
+    State('a-number', 'value'), 
+    # Style and message
     State('a-number', 'className'), State('msg-empty-fields', 'message')]
 )
 def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom, ced, fnac, number, num_class, message):
@@ -574,12 +593,17 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
 
 
 @app.callback(
-    [Output('modal', 'opened'), Output('modal-number', 'value'),
-    Output('modal-apellido', 'value'), Output('modal-nombre', 'value'),
-    Output('modal-cedula', 'value'), Output('modal-fechanac', 'value')],
+    [Output('modal', 'opened'), # Open modal
+    # Modal fields
+    Output('modal-number', 'value'), Output('modal-apellido', 'value'), 
+    Output('modal-nombre', 'value'), Output('modal-cedula', 'value'), 
+    Output('modal-fechanac', 'value')],
+    ### INPUTS
     [Input('button-modificar1', 'n_clicks'), Input('button-restaurar', 'n_clicks')],
-    [State('modal', 'opened'), State('table-buscar', 'active_cell'), 
-    State('table-buscar', 'data'), ]
+    ### STATES
+    [State('modal', 'opened'), 
+    # Datatable info
+    State('table-buscar', 'active_cell'), State('table-buscar', 'data'), ]
 )
 def show_modificar(form_open, restaurar, is_open, cell, rows):
     triggered_id = ctx.triggered_id
