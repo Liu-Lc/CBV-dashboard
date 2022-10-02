@@ -456,12 +456,11 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
             return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
                 'Error. Faltan campos por rellenar.', None, None, None, None, None]
         else:
-            print('modify pass')
-            # Update
+            ## Check if values are already in the database
             results = fetch_sql(mysql.connector.connect(**keys.config),
                 f'''SELECT * FROM clinica WHERE ID != {cell['row_id']}
-                    AND ((APELLIDO = '{m_ap}' AND NOMBRE = '{m_nom}') 
-                        OR (CEDULA = '{m_ced}' AND CEDULA != '') OR NO = '{m_num}');''')
+                    AND ( (APELLIDO = UPPER('{m_ap}') AND NOMBRE = UPPER('{m_nom}') ) 
+                        OR (CEDULA = UPPER('{m_ced}') AND CEDULA != '') OR NO = '{m_num}');''')
             if results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
@@ -500,18 +499,26 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
         if query!='':
             cursor = conn.cursor()
             # Executes query or procedure depending of search option
-            if search_option=='exacta':
-                cursor.execute(query)
-                results = cursor.fetchall()
-            else:
-                cursor.callproc(proc, args)
-                for result in cursor.stored_results():
-                    results = result.fetchall()
-            cursor.close()
-            conn.close()
-            ## Returns results in a dataframe to output object that is the DataTable
+            try:
+                if search_option=='exacta':
+                    cursor.execute(query)
+                    results = cursor.fetchall()
+                else:
+                    cursor.callproc(proc, args)
+                    for result in cursor.stored_results():
+                        results = result.fetchall()
+                ## Returns results in a dataframe to output object that is the DataTable
+                return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
             return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
+                return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
+                    ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None]
+            except Exception as e:
+                error_text = f'Error: {e}'
+                return [], ap1, ap2, nom, ced, fnac, False, True, error_text, None, None, None, None, None
+            finally:
+                cursor.close()
+                conn.close()
         else: return [buscar_data], ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None
     elif triggered_id=='button-limpiar1' or triggered_id==None:
         return [], '', '', '', '', '', False, False, '', None, None, None, None, None
