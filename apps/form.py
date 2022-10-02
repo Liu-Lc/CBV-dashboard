@@ -422,10 +422,16 @@ tabs =  html.Div(className='column', children=[
     # Modify modal
     Output('modal', 'opened'), 
     # Error modal
-    Output('error-modal', 'opened'), Output('error-modal-text', 'children')],
+    Output('error-modal', 'opened'), Output('error-modal-text', 'children'),
+    # Modify modal fields
+    Output('modal-number', 'value'), Output('modal-apellido', 'value'), 
+    Output('modal-nombre', 'value'), Output('modal-cedula', 'value'), 
+    Output('modal-fechanac', 'value')],
     ## INPUTS
     [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks'),
-    Input('button-modificar', 'n_clicks')],
+    Input('button-modificar', 'n_clicks'),
+    # Modal inputs
+    Input('button-modificar1', 'n_clicks'), Input('button-restaurar', 'n_clicks')],
     ## STATES
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
@@ -438,7 +444,7 @@ tabs =  html.Div(className='column', children=[
     # Datatable States
     State('table-buscar', 'data'), State('table-buscar', 'active_cell')]
 )
-def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
+def search_tab(search_click, clean_click, modify_click, form_open, restaurar, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
     triggered_id = ctx.triggered_id
     modified = False
     ## put modify first with a separate if and use variable to control context trigger
@@ -448,7 +454,7 @@ def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2,
             # Show modal error
             print(m_ap, m_ced, m_fnac, m_nom, m_num)
             return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
-                'Error. Faltan campos por rellenar.']
+                'Error. Faltan campos por rellenar.', None, None, None, None, None]
         else:
             print('modify pass')
             # Update
@@ -469,11 +475,23 @@ def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2,
                     #         APELLIDO=ap.upper(), NOMBRE=nom.upper(), CEDULA=ced.upper(), 
                     #         FECHA_NAC=fnac, NO=number)
                     # In this step, the condition doesnt return thus jumps to search condition
+                else: 
+                    return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
+                        f'Error. {e}.', None, None, None, None, None]
+            else: 
                 return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
-                f'Error. Ya existe un registro similar: \n{results}.']
-    if triggered_id=='button-limpiar1' or triggered_id==None:
-        return [], '', '', '', '', '', False, False, ''
-    elif triggered_id=='button-buscar' or modified:
+                f'Error. Ya existe un registro similar: \n{results}.', None, None, None, None, None]
+    elif triggered_id=='button-modificar1' or triggered_id=='button-restaurar':
+        if form_open and cell!=None and len(buscar_data)>0:
+            data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
+                            'cedula', 'fecha_nac', 'number'])
+            row = data[data.id==cell['row_id']].squeeze()
+            # modal open return value depending on callback trigger
+            open_value = m_open if triggered_id=='button-restaurar' else not m_open
+            # Shows the information from the selected row into the modal
+            return [buscar_data], ap1, ap2, nom, ced, fnac, open_value, False, '',  row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
+    ## If its modified, then it will jump to this condition
+    if triggered_id=='button-buscar' or modified:
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
         # Generate query or procedure call
@@ -494,9 +512,11 @@ def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2,
             ## Returns results in a dataframe to output object that is the DataTable
             return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
-                    ap1, ap2, nom, ced, fnac, False, False, '']
-        else: return buscar_data, ap1, ap2, nom, ced, fnac, False, False, ''
-    return buscar_data, ap1, ap2, nom, ced, fnac, False, False, ''
+        else: return [buscar_data], ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None
+    elif triggered_id=='button-limpiar1' or triggered_id==None:
+        return [], '', '', '', '', '', False, False, '', None, None, None, None, None
+    return [buscar_data], ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None
+    ## datatable, ap1, ap2, nom, ced, fnac, modal open, error-modal open, error-modal-text, modal-number, modal-apellido, modal-nombre, modal-cedula, modal-fechanac
 
 
 ## App callback to add a record
@@ -613,29 +633,4 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                     None, None, None, None, None, num_class, False, message]
     return data, ap, nom, ced, fnac, number, num_class, False, message
 
-
-@app.callback(
-    [Output('modal', 'opened'), # Open modal
-    # Modal fields
-    Output('modal-number', 'value'), Output('modal-apellido', 'value'), 
-    Output('modal-nombre', 'value'), Output('modal-cedula', 'value'), 
-    Output('modal-fechanac', 'value')],
-    ### INPUTS
-    [Input('button-modificar1', 'n_clicks'), Input('button-restaurar', 'n_clicks')],
-    ### STATES
-    [State('modal', 'opened'), 
-    # Datatable info
-    State('table-buscar', 'active_cell'), State('table-buscar', 'data'), ]
-)
-def show_modificar(form_open, restaurar, is_open, cell, rows):
-    triggered_id = ctx.triggered_id
-    if form_open and cell!=None and len(rows)>0:
-        data = pd.DataFrame(rows, columns=['id', 'apellido', 'nombre', 
-                        'cedula', 'fecha_nac', 'number'])
-        row = data[data.id==cell['row_id']].squeeze()
-        # modal open return value depending on callback trigger
-        open_value = is_open if triggered_id=='button-restaurar' else not is_open
-        # Shows the information from the selected row into the modal
-        return open_value, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
-    return is_open, None, None, None, None, None
 
