@@ -116,11 +116,31 @@ def fetch_sql(conn, query, fetch=1, buffer=True):
         cursor.close()
         conn.close()
 
-def insert_sql(conn, table, columns='APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO', values=''):
+def insert_sql(conn, table, **kwargs):
+    """ Inserts values into provided MySQL connection, table and arguments (columns and values).
+
+    Args:
+        conn (mysql.connection): MySQL connection
+        table (string): table name
+        **ID (int): id
+        **APELLIDO (string): last name
+        **NOMBRE (string): name
+        **CEDULA (string): identification number
+        **FECHA_NAC (string or date): birth date
+        **NO (int): record number
+        **TRANSACTION (string): transaction type
+        **DATEADDED (string or datetime): datetime added
+        **kwargs: additional columns
+
+    Returns:
+        array: returns boolean if succesfull, last row id if true and exception if false.
+    """    
+    columns = ','.join(kwargs.keys())
+    values = ','.join(repr(x) for x in kwargs.values() )
     try:
-        insert_query = f'''INSERT INTO %s ({columns}) VALUES({values});'''
+        insert_query = f'''INSERT INTO {table} ({columns}) VALUES({values});'''
         cursor = conn.cursor(buffered=True)
-        cursor.execute(insert_query % table)
+        cursor.execute(insert_query)
         return [True, cursor.lastrowid]
     except Exception as e:
         return [False, e]
@@ -438,15 +458,17 @@ def search_tab(search_click, clean_click, modify_click, search_option, ap1, ap2,
                         OR (CEDULA = '{m_ced}' AND CEDULA != '') OR NO = '{m_num}');''')
             if results==None:
                 ## Can be modified
-                print('can be modified')
-                # cell['row_id']
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
                     'clinica', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
-                if modify:
-                    print('record modified')
-                    modified = True
-                    pass
-            else: 
+                if modify: 
+                    modified = True ## Record modified
+                    ## Add insert query with modified
+                    # time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    # modify_mov, modify_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
+                    #         ID=e, TRANSACTION='ADD', DATEADDED=time_now, 
+                    #         APELLIDO=ap.upper(), NOMBRE=nom.upper(), CEDULA=ced.upper(), 
+                    #         FECHA_NAC=fnac, NO=number)
+                    # In this step, the condition doesnt return thus jumps to search condition
                 return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
                 f'Error. Ya existe un registro similar: \n{results}.']
     if triggered_id=='button-limpiar1' or triggered_id==None:
@@ -533,27 +555,27 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             # If the fields are complete, then add to database
             try:
                 results = fetch_sql(mysql.connector.connect(**keys.config), 
-                        f'''SELECT * FROM clinica WHERE (APELLIDO = '{ap}' AND NOMBRE = '{nom}') 
-                        AND (CEDULA = '{ced}' AND CEDULA != '') OR NO = '{number}';''')
+                        f'''SELECT * FROM clinica WHERE (APELLIDO = UPPER('{ap}') AND NOMBRE =' UPPER({nom}') ) 
+                        AND (CEDULA = UPPER('{ced}') AND CEDULA != '') OR NO = '{number}';''')
             except:
                 return data, ap, nom, ced, fnac, number, num_class, True, 'Error: No connection.'
             if results==None: # If the select statement returns None, means theres no similar record
                 # Can be added
-                # insert_query = f'''INSERT INTO %s (APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO) VALUES('{ap}', '{nom}', '{ced}', '{fnac}', {number});'''
                 try:
-                    values = f''' '{ap}', '{nom}', '{ced}', '{fnac}', {number}'''
-                    result1, e = insert_sql(mysql.connector.connect(**keys.config),
-                        'clinica', values=values)
+                    result1, e = insert_sql(mysql.connector.connect(**keys.config), 'clinica', 
+                        APELLIDO=ap.upper(), NOMBRE=nom.upper(), CEDULA=ced.upper(), 
+                        FECHA_NAC=fnac, NO=number)
                     if result1:
-                        result2, e = insert_sql(mysql.connector.connect(**keys.config),
-                            columns=''' ID, TRANSACTION, APELLIDO, NOMBRE, CEDULA, FECHA_NAC, NO ''',
-                            table='movements', values=f''' {e}, 'ADD',''' + values)
+                        time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        result2, e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
+                            ID=e, TRANSACTION='ADD', DATEADDED=time_now, 
+                            APELLIDO=ap.upper(), NOMBRE=nom.upper(), CEDULA=ced.upper(), 
+                            FECHA_NAC=fnac, NO=number)
                         if not result2: raise e
                     else: raise e
                     results = [None, '', '', '', None, '', num_class, False, '']
                 except Exception as e:
-                    print(f'Error inserting. {e}')
-                    return (data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.')
+                    return (data, ap, nom, ced, fnac, number, num_class, True, f'Error has ocurred. {e}')
             else:
                 # Cannot be added because there's already a similar record
                 return (data, ap, nom, ced, fnac, number, num_class, True, 

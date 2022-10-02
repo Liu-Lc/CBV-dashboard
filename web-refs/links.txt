@@ -47,3 +47,6 @@ https://levelup.gitconnected.com/how-to-setup-user-authentication-for-dash-apps-
 Modal Windows
 https://python.plainenglish.io/how-to-create-a-model-window-in-dash-4ab1c8e234d3
 
+Function arguments in python
+https://www.freecodecamp.org/news/args-and-kwargs-in-python/#:~:text=*args%20allows%20us%20to%20pass,a%20variable%20number%20of%20arguments.
+
