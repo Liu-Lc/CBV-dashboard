@@ -509,8 +509,6 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
                         results = result.fetchall()
                 ## Returns results in a dataframe to output object that is the DataTable
                 return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
-            return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
-                return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
                     ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None]
             except Exception as e:
