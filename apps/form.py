@@ -250,8 +250,8 @@ form =  html.Div(className='container', children=[
             html.Div(className='button-container', children=[
                 html.Button('BUSCAR', id='button-buscar', className='large-button'),
                 html.Button('LIMPIAR', id='button-limpiar1', className='large-button'),
-                html.Button('MODIFICAR', id='button-modificar1', className='large-button'),
-                html.Button('ELIMINAR', id='button-eliminar1', className='large-button'),
+                html.Button('MODIFICAR', id='button-modificar1', className='large-button', disabled=True),
+                html.Button('ELIMINAR', id='button-eliminar1', className='large-button', disabled=True),
             ])
         ])
 
