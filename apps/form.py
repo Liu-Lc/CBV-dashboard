@@ -409,6 +409,13 @@ tabs =  html.Div(className='column', children=[
         ])
 
 
+# Pending things to fix
+#   # Mix callbacks for search and modal in only 1
+#   # Refactor insert sql function with arguments
+# add original record to movements table with the info
+#   # add timestamp in movements to know when it was added
+#   # complete the modify action, close the modal and update search table
+    # this last step seems to have completed by itself XD
 
 ## Callbacks / Actions / Updates ##
 
