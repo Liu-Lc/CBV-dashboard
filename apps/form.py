@@ -110,9 +110,9 @@ def fetch_sql(conn, query, fetch=1, buffer=True):
         cursor.execute(query)
         if fetch==1: results = cursor.fetchone()
         else: results = cursor.fetchall()
-        return results
+        return True, results
     except Exception as e:
-        return e
+        return False, e
     finally:
         conn.commit()
         cursor.close()
@@ -466,11 +466,11 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
                 'Error. Faltan campos por rellenar.', None, None, None, None, None]
         else:
             ## Check if values are already in the database
-            results = fetch_sql(mysql.connector.connect(**keys.config),
+            bol, results = fetch_sql(mysql.connector.connect(**keys.config),
                 f'''SELECT * FROM clinica WHERE ID != {cell['row_id']}
                     AND ( (APELLIDO = UPPER('{m_ap}') AND NOMBRE = UPPER('{m_nom}') ) 
                         OR (CEDULA = UPPER('{m_ced}') AND CEDULA != '') OR NO = '{m_num}');''')
-            if results==None:
+            if bol and results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
                     'clinica', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
@@ -563,20 +563,22 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
     triggered_id = ctx.triggered_id
     if triggered_id=='check-id-button' and check_click!=None:
         ### Check number id button if already exists
-        try:
-            results = fetch_sql(mysql.connector.connect(**keys.config),
-                f'SELECT NO FROM clinica WHERE NO={number}')
-        except: return data, ap, nom, ced, fnac, number, 'input-style-s', True, 'Error: No connection.'
-        if results==None:
+        bol, results = fetch_sql(mysql.connector.connect(**keys.config),
+            f'SELECT NO FROM clinica WHERE NO={number}')
+        if bol and results==None:
             return data, ap, nom, ced, fnac, number, 'input-style-s input-green', False, message
+        elif bol==False:
+            return data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error: {results}.'
         else:
             return data, ap, nom, ced, fnac, number, 'input-style-s input-red', False, message
     elif triggered_id=='set-id-button' and set_click!=None:
         ### Set id button generates a new number by adding 1 to the max number
-        results = fetch_sql(mysql.connector.connect(**keys.config), 
+        bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
                     f'SELECT MAX(NO) FROM clinica')
-        if results==None:
+        if bol and results==None:
             return data, ap, nom, ced, fnac, '', num_class, False, message
+        elif bol==False:
+            return data, ap, nom, ced, fnac, '', num_class, True, f'Error: {results}.'
         else:
             return data, ap, nom, ced, fnac, results[0]+1, num_class, False, message
     elif triggered_id=='button-agregar':
@@ -587,13 +589,10 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             return data, ap, nom, ced, fnac, number, num_class, True, 'Faltan campos por rellenar.'
         else:
             # If the fields are complete, then add to database
-            try:
-                results = fetch_sql(mysql.connector.connect(**keys.config), 
-                        f'''SELECT * FROM clinica WHERE (APELLIDO = UPPER('{ap}') AND NOMBRE =' UPPER({nom}') ) 
-                        AND (CEDULA = UPPER('{ced}') AND CEDULA != '') OR NO = '{number}';''')
-            except:
-                return data, ap, nom, ced, fnac, number, num_class, True, 'Error: No connection.'
-            if results==None: # If the select statement returns None, means theres no similar record
+            bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
+                f'''SELECT * FROM clinica WHERE (APELLIDO = UPPER('{ap}') AND NOMBRE =' UPPER({nom}') ) 
+                AND (CEDULA = UPPER('{ced}') AND CEDULA != '') OR NO = '{number}';''')
+            if bol and results==None: # If the select statement returns None, means theres no similar record
                 # Can be added
                 try:
                     result1, e = insert_sql(mysql.connector.connect(**keys.config), 'clinica', 
@@ -610,22 +609,23 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                     results = [None, '', '', '', None, '', num_class, False, '']
                 except Exception as e:
                     return (data, ap, nom, ced, fnac, number, num_class, True, f'Error has ocurred. {e}')
+            elif bol==False:
+                return data, ap, nom, ced, fnac, number, num_class, True, f'Error: {results}'
             else:
                 # Cannot be added because there's already a similar record
                 return (data, ap, nom, ced, fnac, number, num_class, True, 
                 'Error. Existe un registro con el mismo número de cédula y/o expediente.')
             ## If the record was added succesfully then the datatable has to be updated
             try:
-                data = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
+                bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
                     query=f'''SELECT * FROM movements WHERE No>{config['last_num']} AND TRANSACTION='ADD';''')
-                # results = (data, ap, nom, ced, fnac, number, num_class, False, '')
-                results = [pd.DataFrame(data, columns=['id', 'transaction', 'apellido', 'nombre', 
+                final_results = [pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
                     '', '', '', None, '', num_class, False, '']
             except Exception as e:
                 print(f'Error updating data table. {e}')
                 return [data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.']
-            return results
+            return final_results
     elif triggered_id=='button-limpiar2':
         results = fetch_sql(mysql.connector.connect(**keys.config),
             f'''SELECT MAX(No) FROM movements WHERE TRANSACTION='ADD';''')
@@ -637,10 +637,12 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
         return None, None, None, None, None, None, num_class, False, message
     elif triggered_id=='tabs-main':
         if tab=='agregar':
-            results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
-                query=f'''SELECT * FROM movements WHERE No>{config['last_num']};''')
-            if results==None:
+            bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
+                query=f'''SELECT * FROM movements WHERE No>{config['last_num']} AND TRANSACTION='ADD';''')
+            if bol and results==None:
                 return [[], None, None, None, None, None, num_class, False, message]
+            elif bol==False:
+                return [[], None, None, None, None, None, num_class, True, f'Error: {results}']
             else:
                 return [pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
                     'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'
