@@ -347,7 +347,7 @@ form_add =  html.Div(className='container', children=[
                                     {'id':'apellido', 'name':'Apellido'},
                                     {'id':'nombre', 'name':'Nombre'},
                                     {'id':'cedula', 'name':'Cédula'},
-                                    {'id':'fecha_nac', 'name':'Fecha de nacimiento'},
+                                    {'id':'fecha_nac', 'name':'F. Nac'},
                                     {'id':'number', 'name':'No.'},
                                 ],
                                 fixed_rows={'headers': True},
@@ -640,9 +640,9 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             if results==None:
                 return [[], None, None, None, None, None, num_class, False, message]
             else:
-                return [pd.DataFrame(results, columns=['id', 'transaction', 'apellido', 'nombre', 
-                    'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
-                    None, None, None, None, None, num_class, False, message]
+                return [pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
+                    'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'
+                    ]).to_dict('records'), None, None, None, None, None, num_class, False, message]
     return data, ap, nom, ced, fnac, number, num_class, False, message
 
 
