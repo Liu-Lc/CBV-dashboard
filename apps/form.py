@@ -111,6 +111,8 @@ def fetch_sql(conn, query, fetch=1, buffer=True):
         if fetch==1: results = cursor.fetchone()
         else: results = cursor.fetchall()
         return results
+    except Exception as e:
+        return e
     finally:
         conn.commit()
         cursor.close()
@@ -442,7 +444,7 @@ tabs =  html.Div(className='column', children=[
     ## STATES
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
-    State('f-cedula', 'value'), State('f-fechanac', 'date'),
+    State('f-cedula', 'value'), State('f-fechanac', 'value'),
     # Modal states
     State('modal', 'opened'), 
     State('modal-apellido', 'value'), State('modal-nombre', 'value'), 
@@ -551,7 +553,7 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
     [State('table-agregar', 'data'), 
     # Fields
     State('a-apellido', 'value'), State('a-nombre', 'value'), 
-    State('a-cedula', 'value'), State('a-fechanac', 'date'), 
+    State('a-cedula', 'value'), State('a-fechanac', 'value'), 
     State('a-number', 'value'), 
     # Style and message
     State('a-number', 'className'), State('msg-empty-fields', 'message')]
