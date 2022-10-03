@@ -591,7 +591,7 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             # If the fields are complete, then add to database
             bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
                 f'''SELECT * FROM clinica WHERE (APELLIDO = UPPER('{ap}') AND NOMBRE =' UPPER({nom}') ) 
-                AND (CEDULA = UPPER('{ced}') AND CEDULA != '') OR NO = '{number}';''')
+                AND (CEDULA = UPPER('{ced}') AND CEDULA != '') OR NO = {number};''')
             if bol and results==None: # If the select statement returns None, means theres no similar record
                 # Can be added
                 try:
