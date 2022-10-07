@@ -184,77 +184,81 @@ def modify_sql(conn, table, id, apellido, nombre, cedula, fecha, exp):
 
 ## Variable to initialize the complete form. Check styles for classNames.
 form =  html.Div(className='container', children=[
-            html.Div(className='row', children=[
-                html.Div(className='one-third column', children=[
-                    ## Starts the left panel with fields
-                    html.Div(className='row', children=[
-                        html.Span('Apellidos', className='label'),
-                        html.Div(className='auto-column', children=[
-                            dcc.Input(id='f-apellido1', className='input-style', autoComplete='off'),
-                            dcc.Input(id='f-apellido2', className='input-style', autoComplete='off'),
-                        ])
-                    ]),
-                    html.Div(className='row', children=[
-                        html.Span('Nombre', className='label'),
-                        dcc.Input(id='f-nombre', className='input-style', autoComplete='off'),
-                    ]),
-                    html.Div(className='row', children=[
-                        html.Span('Cédula', className='label'),
-                        dcc.Input(id='f-cedula', className='input-style', autoComplete='off'),
-                    ]),
-                    html.Div(className='row', children=[
-                        html.Span('Fecha de nacimiento', className='label'),
-                        dmc.DatePicker(id='f-fechanac', class_name='input-style', 
-                            inputFormat='DD/MM/YYYY', clearable=True),
-                    ]),
-                    html.P('', className='spacer'),
-                    ## Type of search radio selection
-                    dcc.RadioItems(className='radio-items', id='search-option',
-                        options=[
-                            {'value':'ambigua', 'label':'Ambigua'},
-                            {'value':'precisa', 'label':'Precisa'},
-                            {'value':'exacta', 'label':'Exacta'},
-                        ], value='exacta'
-                    ),
+            html.Div(className='one-third column', children=[
+                ## Starts the left panel with fields
+                html.Div(className='row', children=[
+                    html.Span('Apellidos', className='label'),
+                    html.Div(className='auto-column', children=[
+                        dcc.Input(id='f-apellido1', className='input-style', autoComplete='off'),
+                        dcc.Input(id='f-apellido2', className='input-style', autoComplete='off'),
+                    ])
                 ]),
-                ## Data Table for results in the right side
-                html.Div(className='two-thirds column table', children=[
-                    dcc.Loading(id='loading-table', type='default', children=[
-                        table.DataTable(id='table-buscar',
-                            columns=[
-                                {'id':'id', 'name':'id'},
-                                {'id':'apellido', 'name':'Apellido'},
-                                {'id':'nombre', 'name':'Nombre'},
-                                {'id':'cedula', 'name':'Cédula'},
-                                {'id':'fecha_nac', 'name':'F. Nac.'},
-                                {'id':'number', 'name':'No.'},
-                            ],
-                            fixed_rows={'headers': True},
-                            # page_action='none',
-                            page_size=150,
-                            style_table={'height': '400px', 'overflowY': 'auto'},
-                            # style_header={'textAlign': 'center'},
-                            style_cell_conditional=[
-                                {'if': {'column_id': c},
-                                    'width': '8%'} for c in ['id', 'number']
-                            ] + [
-                                {'if': {'column_id': 'cedula'},
-                                    'width': '15%'},
-                                {'if': {'column_id': 'fechanac'},
-                                    'width': '12%'} ,
-                            ],
-                            style_cell={'textAlign': 'center', 'min-width': '50px'},
-                        ),
+                html.Div(className='row', children=[
+                    html.Span('Nombre', className='label'),
+                    dcc.Input(id='f-nombre', className='input-style', autoComplete='off'),
+                ]),
+                html.Div(className='row', children=[
+                    html.Span('Cédula', className='label'),
+                    dcc.Input(id='f-cedula', className='input-style', autoComplete='off'),
+                ]),
+                html.Div(className='row', children=[
+                    html.Span('Fecha de nacimiento', className='label'),
+                    dmc.DatePicker(id='f-fechanac', class_name='input-style', 
+                        inputFormat='DD/MM/YYYY', clearable=True),
+                ]),
+                html.P('', className='spacer'),
+                ## Type of search radio selection
+                dcc.RadioItems(className='radio-items', id='search-option',
+                    options=[
+                        {'value':'ambigua', 'label':'Ambigua'},
+                        {'value':'precisa', 'label':'Precisa'},
+                        {'value':'exacta', 'label':'Exacta'},
+                    ], value='exacta'
+                ),
+                html.P('', className='spacer'),
+                ## Buttons section in lower section
+                html.Div(className='column', children=[
+                    html.Div(className='row', children=[
+                        html.Button('BUSCAR', id='button-buscar', className='large-button'),
+                        html.Button('LIMPIAR', id='button-limpiar1', className='large-button'),
+                    ]),
+                    html.Div(className='row', children=[
+                        dcc.ConfirmDialog(id='msg-eliminar'),
+                        html.Button('MODIFICAR', id='button-modificar1', className='large-button'),
+                        html.Button('ELIMINAR', id='button-eliminar1', className='large-button'),
                     ]),
                 ]),
             ]),
-            ## Buttons section in lower section
-            html.Div(className='button-container', children=[
-                html.Button('BUSCAR', id='button-buscar', className='large-button'),
-                html.Button('LIMPIAR', id='button-limpiar1', className='large-button'),
-                html.Button('MODIFICAR', id='button-modificar1', className='large-button', disabled=True),
-                html.Button('ELIMINAR', id='button-eliminar1', className='large-button', disabled=True),
-            ])
+            ## Data Table for results in the right side
+            html.Div(className='two-thirds column table', children=[
+                dcc.Loading(id='loading-table', type='default', children=[
+                    table.DataTable(id='table-buscar',
+                        columns=[
+                            {'id':'id', 'name':'id'},
+                            {'id':'apellido', 'name':'Apellido'},
+                            {'id':'nombre', 'name':'Nombre'},
+                            {'id':'cedula', 'name':'Cédula'},
+                            {'id':'fecha_nac', 'name':'F. Nac.'},
+                            {'id':'number', 'name':'No.'},
+                        ],
+                        fixed_rows={'headers': True},
+                        # page_action='none',
+                        page_size=150,
+                        style_table={'height': '420px', 'overflowY': 'auto'},
+                        # style_header={'textAlign': 'center'},
+                        style_cell_conditional=[
+                            {'if': {'column_id': c},
+                                'width': '8%'} for c in ['id', 'number']
+                        ] + [
+                            {'if': {'column_id': 'cedula'},
+                                'width': '15%'},
+                            {'if': {'column_id': 'fechanac'},
+                                'width': '12%'} ,
+                        ],
+                        style_cell={'textAlign': 'center', 'min-width': '50px'},
+                    ),
+                ]),
+            ]),
         ])
 
 form_modal = html.Div(children=[
@@ -285,8 +289,8 @@ form_modal = html.Div(children=[
                         inputFormat='DD/MM/YYYY')
         ]),
         html.Div(className='button-container', children=[
-            html.Button('MODIFICAR', id='button-modificar', className='large-button'),
             html.Button('RESTAURAR', id='button-restaurar', className='large-button'),
+            html.Button('MODIFICAR', id='button-modificar', className='large-button'),
         ])
     ], id='modal', size='lg', centered=True, opened=False)
 ])
@@ -302,81 +306,84 @@ error_modal = html.Div([
 form_add =  html.Div(className='container', children=[
                 dcc.ConfirmDialog(id='msg-empty-fields',
                      message='Faltan campos por rellenar'),
-                html.Div(className='row', children=[
-                    html.Div(className='one-third column', children=[
-                        ## Left panel for fields
+                html.Div(className='one-third column', children=[
+                    ## Left panel for fields
+                    html.Div(className='row', children=[
+                        html.Span('No.', className='label'),
                         html.Div(className='row', children=[
-                            html.Span('No.', className='label'),
-                            html.Div(className='row', children=[
-                                dcc.Input(id='a-number', type='number', className='input-style-s', autoComplete='off'),
-                                html.Button(id='set-id-button', className='small-button', children=[
-                                    html.I(className='fa fa-asterisk fa-xs'),
-                                    # tooltip
-                                    html.Span(className='tooltip', children=['Generar #']),
-                                ]),
-                                html.Button(id='check-id-button', className='small-button', children=[
-                                    html.I(className='fa fa-check-circle fa-xs'),
-                                    # tooltip
-                                    html.Span(className='tooltip', children=['Verificar #']),
-                                ]),
+                            dcc.Input(id='a-number', type='number', className='input-style-s', autoComplete='off'),
+                            html.Button(id='set-id-button', className='small-button', children=[
+                                html.I(className='fa fa-asterisk fa-xs'),
+                                # tooltip
+                                html.Span(className='tooltip', children=['Generar #']),
+                            ]),
+                            html.Button(id='check-id-button', className='small-button', children=[
+                                html.I(className='fa fa-check-circle fa-xs'),
+                                # tooltip
+                                html.Span(className='tooltip', children=['Verificar #']),
                             ]),
                         ]),
-                        html.Div(className='row', children=[
-                            html.Span('Apellidos', className='label'),
-                            dcc.Input(className='input-style', id='a-apellido', autoComplete='off'),
-                        ]),
-                        html.Div(className='row', children=[
-                            html.Span('Nombre', className='label'),
-                            dcc.Input(className='input-style', id='a-nombre', autoComplete='off'),
-                        ]),
-                        html.Div(className='row', children=[
-                            html.Span('Cédula', className='label'),
-                            dcc.Input(className='input-style', id='a-cedula', autoComplete='off'),
-                        ]),
-                        html.Div(className='row', children=[
-                            html.Span('Fecha de nacimiento', className='label'),
-                            dmc.DatePicker(id='a-fechanac', class_name='input-style', 
-                                inputFormat='DD/MM/YYYY', clearable=True),
-                        ]),
-                        html.P('', className='spacer'),
                     ]),
-                    ## Data Table for results
-                    html.Div(className='two-thirds column table', children=[
-                        dcc.Loading(id='loading-table', type='default', children=[
-                            table.DataTable(id='table-agregar', 
-                                columns=[
-                                    {'id':'id', 'name':'id'},
-                                    {'id':'apellido', 'name':'Apellido'},
-                                    {'id':'nombre', 'name':'Nombre'},
-                                    {'id':'cedula', 'name':'Cédula'},
-                                    {'id':'fecha_nac', 'name':'F. Nac'},
-                                    {'id':'number', 'name':'No.'},
-                                ],
-                                fixed_rows={'headers': True},
-                                page_action='none',
-                                page_size=150,
-                                style_table={'height': '400px', 'overflowY': 'auto'},
-                                # style_header={'textAlign': 'center'},
-                                style_cell_conditional=[
-                                    {'if': {'column_id': c},
-                                        'width': '8%'} for c in ['id', 'number']
-                                ] + [
-                                    {'if': {'column_id': 'cedula'},
-                                        'width': '15%'},
-                                    {'if': {'column_id': 'fechanac'},
-                                        'width': '12%'} ,
-                                ],
-                                style_cell={'textAlign': 'center', 'min-width': '50px'},
-                            ),
+                    html.Div(className='row', children=[
+                        html.Span('Apellidos', className='label'),
+                        dcc.Input(className='input-style', id='a-apellido', autoComplete='off'),
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Nombre', className='label'),
+                        dcc.Input(className='input-style', id='a-nombre', autoComplete='off'),
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Cédula', className='label'),
+                        dcc.Input(className='input-style', id='a-cedula', autoComplete='off'),
+                    ]),
+                    html.Div(className='row', children=[
+                        html.Span('Fecha de nacimiento', className='label'),
+                        dmc.DatePicker(id='a-fechanac', class_name='input-style', 
+                            inputFormat='DD/MM/YYYY', clearable=True),
+                    ]),
+                    html.P('', className='spacer'),
+                    ## Buttons section at lower side
+                    html.Div(className='column', children=[
+                        html.Div(className='row', children=[
+                            html.Button('AGREGAR', id='button-agregar', className='large-button'),
+                            html.Button('LIMPIAR', id='button-limpiar2', className='large-button'),
+                        ]),
+                        html.Div(className='row', children=[
+                            dcc.ConfirmDialog(id='msg-eliminar2'),
+                            html.Button('MODIFICAR', id='button-modificar2', className='large-button', disabled=True),
+                            html.Button('ELIMINAR', id='button-eliminar2', className='large-button', disabled=True),
                         ]),
                     ]),
                 ]),
-                ## Buttons section at lower side
-                html.Div(className='button-container', children=[
-                    html.Button('AGREGAR', id='button-agregar', className='large-button'),
-                    html.Button('LIMPIAR', id='button-limpiar2', className='large-button'),
-                    html.Button('MODIFICAR', id='button-modificar2', className='large-button', disabled=True),
-                    html.Button('ELIMINAR', id='button-eliminar2', className='large-button', disabled=True),
+                ## Data Table for results
+                html.Div(className='two-thirds column table', children=[
+                    dcc.Loading(id='loading-table', type='default', children=[
+                        table.DataTable(id='table-agregar', 
+                            columns=[
+                                {'id':'id', 'name':'id'},
+                                {'id':'apellido', 'name':'Apellido'},
+                                {'id':'nombre', 'name':'Nombre'},
+                                {'id':'cedula', 'name':'Cédula'},
+                                {'id':'fecha_nac', 'name':'F. Nac'},
+                                {'id':'number', 'name':'No.'},
+                            ],
+                            fixed_rows={'headers': True},
+                            page_action='none',
+                            page_size=150,
+                            style_table={'height': '420px', 'overflowY': 'auto'},
+                            # style_header={'textAlign': 'center'},
+                            style_cell_conditional=[
+                                {'if': {'column_id': c},
+                                    'width': '8%'} for c in ['id', 'number']
+                            ] + [
+                                {'if': {'column_id': 'cedula'},
+                                    'width': '15%'},
+                                {'if': {'column_id': 'fechanac'},
+                                    'width': '12%'} ,
+                            ],
+                            style_cell={'textAlign': 'center', 'min-width': '50px'},
+                        ),
+                    ]),
                 ]),
             ])
 
@@ -411,13 +418,7 @@ tabs =  html.Div(className='column', children=[
         ])
 
 
-# Pending things to fix
-#   # Mix callbacks for search and modal in only 1
-#   # Refactor insert sql function with arguments
-# add original record to movements table with the info
-#   # add timestamp in movements to know when it was added
-#   # complete the modify action, close the modal and update search table
-    # this last step seems to have completed by itself XD
+
 
 ## Callbacks / Actions / Updates ##
 
