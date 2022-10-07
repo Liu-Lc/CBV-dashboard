@@ -1,0 +1,132 @@
+:root {
+  font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+}
+
+@media (max-width: 900px) {
+
+  .container {
+    margin: 10px;
+    padding: 10px;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-around !important;
+  }
+
+  .tabs {
+    width: 20%;
+    min-width: 100px;
+    height: 40px;
+    flex-direction: row !important;
+  }
+  .tab {
+    color:#586069;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border: 0px !important;
+    background-color: #fafbfc;
+    padding: 12px !important;
+    font-size: 12px !important;
+    font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab-selected {
+    color: black;
+    font-weight: 600;
+    border-left: 1px solid lightgrey !important;
+    border-right: 1px solid lightgrey !important;
+    border-top: 4px solid #0b77dd !important;
+  }
+
+  .row {
+    margin: 10px 0px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .table {
+    margin-left: 0px !important;
+    flex-grow: 1;
+  }
+
+  .button-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 10px;
+  }
+
+  .large-button {
+    font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin: 8px 0px;
+    height: 50px;
+    width: 50%;
+    min-width: 120px;
+    cursor: pointer;
+  }
+  .square-button-m {
+    font-size: 12px;
+    padding: 2px;
+    height: 30px;
+    width: 30px;
+    cursor: pointer;
+  }
+  .small-button {
+    font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+    font-size: 12px;
+    margin: 5px;
+    padding: 1px;
+    height: 25px;
+    width: 25px;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+  .small-button .tooltip {
+    visibility: hidden;
+    width: 120px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    /* Position the tooltip */
+    position: absolute;
+    z-index: 1;
+    top: 25%;
+    margin-left: -60px; /* Use half of the width (120/2 = 60), to center the tooltip */
+  }
+  .small-button:hover .tooltip {
+    visibility: visible;
+  }
+
+  .right {
+    justify-content: flex-end;
+  }
+
+  .one.column,
+  .one.columns                    { width: 100% !important;             }
+  .two.columns                    { width: 16.25%;         }
+  .three.columns                  { width: 22%;            }
+
+  .one-third.column               { width: 100% !important; margin: 5px; }
+  .two-thirds.column              { width: 100% !important; margin: 5px; }
+
+}
+
+@media (max-width: 500px) {
+  .large-button {
+    font-family: "Montserrat", Roboto, "Segoe UI", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 8px 0px;
+    height: 50px;
+    width: 50%;
+    min-width: 120px;
+    cursor: pointer;
+  }
+  
+}
