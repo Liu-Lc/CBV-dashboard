@@ -181,6 +181,30 @@ def modify_sql(conn, table, id, apellido, nombre, cedula, fecha, exp):
         cursor.close()
         conn.close()
 
+def delete_sql(conn, table, id:int, transaction:bool=False):
+    """ Executes delete statement on MySQL connection provided.
+
+    Args:
+        conn (mysql.connector): MySQL connection
+        table (str): table name
+        id (int): record's ID to delete
+
+    Returns:
+        array: True of False if the statement executed. If false, additionally returns exception.
+    """    
+    try:
+        delete_query = f'''DELETE FROM {table} WHERE ID = {id} 
+            {"AND TRANSACTION='ADD'" if transaction else ''}; '''
+        cursor = conn.cursor()
+        cursor.execute(delete_query)
+        return [True, '']
+    except Exception as e:
+        return [False, e]
+    finally:
+        conn.commit()
+        cursor.close()
+        conn.close()
+
 
 ## Variable to initialize the complete form. Check styles for classNames.
 form =  html.Div(className='container', children=[
@@ -436,12 +460,16 @@ tabs =  html.Div(className='column', children=[
     # Modify modal fields
     Output('modal-number', 'value'), Output('modal-apellido', 'value'), 
     Output('modal-nombre', 'value'), Output('modal-cedula', 'value'), 
-    Output('modal-fechanac', 'value')],
+    Output('modal-fechanac', 'value'),
+    # Output for confirm dialog
+    Output('msg-eliminar', 'displayed'), Output('msg-eliminar', 'message')],
     ## INPUTS
     [Input('button-buscar', 'n_clicks'), Input('button-limpiar1', 'n_clicks'),
     Input('button-modificar', 'n_clicks'),
     # Modal inputs
-    Input('button-modificar1', 'n_clicks'), Input('button-restaurar', 'n_clicks')],
+    Input('button-modificar1', 'n_clicks'), Input('button-restaurar', 'n_clicks'),
+    # Confirm dialog for remove record
+    Input('button-eliminar1', 'n_clicks'), Input('msg-eliminar', 'submit_n_clicks')],
     ## STATES
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
@@ -454,7 +482,7 @@ tabs =  html.Div(className='column', children=[
     # Datatable States
     State('table-buscar', 'data'), State('table-buscar', 'active_cell')]
 )
-def search_tab(search_click, clean_click, modify_click, form_open, restaurar, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
+def search_tab(search_click, clean_click, modify_click, form_open, restaurar, show_eliminar, eliminar, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
     triggered_id = ctx.triggered_id
     modified = False
     ## put modify first with a separate if and use variable to control context trigger
@@ -462,9 +490,9 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
         ## Update table for modificar action
         if ( isempty(m_ap) or isempty(m_nom) or isempty(m_ced) or isempty(m_fnac) or isempty(m_num) ):
             # Show modal error
-            print(m_ap, m_ced, m_fnac, m_nom, m_num)
-            return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
-                'Error. Faltan campos por rellenar.', None, None, None, None, None]
+            return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+                'Error. Faltan campos por rellenar.', None, None, None, None, None,
+                False, '']
         else:
             ## Check if values are already in the database
             bol, results = fetch_sql(mysql.connector.connect(**keys.config),
@@ -485,21 +513,39 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
                     #         FECHA_NAC=fnac, NO=number)
                     # In this step, the condition doesnt return thus jumps to search condition
                 else: 
-                    return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
-                        f'Error. {e}.', None, None, None, None, None]
+                    logging.exception(f'''[Clinica] Error modifying record {cell['row_id']}.\nException: {e}''')
+                    return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+                        f'Error modificando el registro.', None, None, None, None, None,
+                        False, '']
             else: 
-                return [ [buscar_data], ap1, ap2, nom, ced, fnac, m_open, True,
-                f'Error. Ya existe un registro similar: \n{results}.', None, None, None, None, None]
-    elif triggered_id=='button-modificar1' or triggered_id=='button-restaurar':
-        if form_open and cell!=None and len(buscar_data)>0:
-            data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
-                            'cedula', 'fecha_nac', 'number'])
-            row = data[data.id==cell['row_id']].squeeze()
-            # modal open return value depending on callback trigger
-            open_value = m_open if triggered_id=='button-restaurar' else not m_open
-            # Shows the information from the selected row into the modal
-            return [buscar_data], ap1, ap2, nom, ced, fnac, open_value, False, '',  row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac
-    ## If its modified, then it will jump to this condition
+                return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+                    f'Error. Ya existe un registro similar: \n{results}.', None, None, None, 
+                    None, None, False, '']
+    elif triggered_id=='msg-eliminar':
+        data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
+                'cedula', 'fecha_nac', 'number'])
+        row = data[data.id==cell['row_id']].squeeze()
+        delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['row_id'])
+        delete_mov2, delete_e2 = delete_sql(mysql.connector.connect(**keys.config), 
+                                    'movements', cell['row_id'], transaction=True)
+        if delete_mov: 
+            modified = True
+            logging.info(f'''[Clinica] Record {cell['row_id']} succesfully deleted.''')
+            time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            add_del_mov, add_del_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
+                            ID=cell['row_id'], TRANSACTION='DELETE', DATEADDED=time_now, 
+                            APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
+                            CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
+            if add_del_mov: logging.info(f'''[Movements] Record {cell['row_id']} succesfully added.''')
+            else: logging.exception(f'''[Movements] Error adding record [{row}].\nException: {add_del_e}''')
+        else: 
+            logging.exception(f'''[Clinica] Error deleting record {cell['row_id']}. Exception: {delete_e}''')
+            return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+                f'Error eliminando el registro.', None, None, None, None, None, False, '']
+        if not delete_mov2: 
+            logging.exception(f'''[Movements] Error deleting record {cell['row_id']}. Exception: {delete_e2}''')
+
+    ### If its modified, then it will jump to this condition ###
     if triggered_id=='button-buscar' or modified:
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
@@ -520,14 +566,18 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, se
                 ## Returns results in a dataframe to output object that is the DataTable
                 return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
-                    ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None]
+                    ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None,
+                    False, '']
             except Exception as e:
+                logging.exception(f'''Error searching record. Exception: {e}''')
                 error_text = f'Error: {e}'
-                return [], ap1, ap2, nom, ced, fnac, False, True, error_text, None, None, None, None, None
+                return [[], ap1, ap2, nom, ced, fnac, False, True, error_text, None, None, None, 
+                None, None, False, '']
             finally:
                 cursor.close()
                 conn.close()
-        else: return [buscar_data], ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None
+        else: return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
+            None, None, False, '']
     elif triggered_id=='button-limpiar1' or triggered_id==None:
         return [], '', '', '', '', '', False, False, '', None, None, None, None, None
     return [buscar_data], ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None
