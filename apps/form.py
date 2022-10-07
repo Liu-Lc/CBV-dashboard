@@ -505,12 +505,25 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
                     'clinica', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
                 if modify: 
                     modified = True ## Record modified
+                    data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
+                            'cedula', 'fecha_nac', 'number'])
+                    row = data[data.id==cell['row_id']].squeeze()
                     ## Add insert query with modified
-                    # time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    # modify_mov, modify_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
-                    #         ID=e, TRANSACTION='ADD', DATEADDED=time_now, 
-                    #         APELLIDO=ap.upper(), NOMBRE=nom.upper(), CEDULA=ced.upper(), 
-                    #         FECHA_NAC=fnac, NO=number)
+                    time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    modify_mov, modify_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
+                            ID=cell['row_id'], TRANSACTION='MODIFY', DATEADDED=time_now, 
+                            APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
+                            CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
+                    ## add log and not show message bc of extra action
+                    if modify_mov: 
+                        logging.info(f'''[Clinica] Record {cell['row_id']} succesfully modified.''')
+                        ## move this modify above insert and below first modify
+                        modify2, e = modify_sql(mysql.connector.connect(**keys.config),
+                            'movements', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
+                        if modify2: logging.info(f'''[Movements] Record {cell['row_id']} succesfully modified.''')
+                        else: logging.error(f'''[Movements] Error updating record {cell['row_id']}.''')
+                    else: 
+                        logging.exception(f'''[Movements] Error adding record {cell['row_id']}. Exception: {modify_e}''')
                     # In this step, the condition doesnt return thus jumps to search condition
                 else: 
                     logging.exception(f'''[Clinica] Error modifying record {cell['row_id']}.\nException: {e}''')
@@ -579,8 +592,27 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
         else: return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
             None, None, False, '']
     elif triggered_id=='button-limpiar1' or triggered_id==None:
-        return [], '', '', '', '', '', False, False, '', None, None, None, None, None
-    return [buscar_data], ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None
+        return [], '', '', '', '', '', False, False, '', None, None, None, None, None, False, ''
+    elif triggered_id=='button-modificar1' or triggered_id=='button-restaurar':
+        if form_open and cell!=None and len(buscar_data)>0:
+            data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
+                            'cedula', 'fecha_nac', 'number'])
+            row = data[data.id==cell['row_id']].squeeze()
+            # modal open return value depending on callback trigger
+            open_value = m_open if triggered_id=='button-restaurar' else not m_open
+            # Shows the information from the selected row into the modal
+            return [buscar_data, ap1, ap2, nom, ced, fnac, open_value, False, '',  
+                row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac, False, '']
+    elif triggered_id=='button-eliminar1' and cell!=None and len(buscar_data)>0:
+        # Button from main tab that shows a message box (msg-eliminar)
+        data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
+                'cedula', 'fecha_nac', 'number'])
+        row = data[data.id==cell['row_id']].squeeze()
+        return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
+            None, None, True, 
+            f'Seguro desea eliminar el siguiente registro?\nNombre: {row.apellido}, {row.nombre}\nExpediente: {row.number}']
+    return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', 
+        None, None, None, None, None, False, '']
     ## datatable, ap1, ap2, nom, ced, fnac, modal open, error-modal open, error-modal-text, modal-number, modal-apellido, modal-nombre, modal-cedula, modal-fechanac
 
 
