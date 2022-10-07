@@ -659,13 +659,13 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                     else: raise e
                     results = [None, '', '', '', None, '', num_class, False, '']
                 except Exception as e:
-                    return (data, ap, nom, ced, fnac, number, num_class, True, f'Error has ocurred. {e}')
+                    return [data, ap, nom, ced, fnac, number, num_class, True, f'Error has ocurred. {e}']
             elif bol==False:
                 return data, ap, nom, ced, fnac, number, num_class, True, f'Error: {results}'
             else:
                 # Cannot be added because there's already a similar record
-                return (data, ap, nom, ced, fnac, number, num_class, True, 
-                'Error. Existe un registro con el mismo número de cédula y/o expediente.')
+                return [data, ap, nom, ced, fnac, number, num_class, True, 
+                'Error. Existe un registro con el mismo número de cédula y/o expediente.']
             ## If the record was added succesfully then the datatable has to be updated
             try:
                 bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
@@ -678,13 +678,16 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                 return [data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.']
             return final_results
     elif triggered_id=='button-limpiar2':
-        results = fetch_sql(mysql.connector.connect(**keys.config),
+        bol, results = fetch_sql(mysql.connector.connect(**keys.config),
             f'''SELECT MAX(No) FROM movements WHERE TRANSACTION='ADD';''')
-        # Create dictionary variable with max number
-        config = {'last_num':results[0]}
-        # Dump json of dictionary into config file
-        json.dump(config, open(config_file, 'w'))
-        # drop everything from table added
+        if bol:
+            # Create dictionary variable with max number
+            config = {'last_num':results[0]}
+            # Dump json of dictionary into config file
+            json.dump(config, open(config_file, 'w'))
+            logging.info(f'''Tab Add. Resetting last ID: {results[0]}.''')
+        elif bol==False:
+            logging.exception(f'''Error getting max ID. Last number: {config['last_num']}. Exception: {results}''')
         return None, None, None, None, None, None, num_class, False, message
     elif triggered_id=='tabs-main':
         if tab=='agregar':
@@ -693,11 +696,12 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             if bol and results==None:
                 return [[], None, None, None, None, None, num_class, False, message]
             elif bol==False:
+                logging.exception(f'''Error getting last added records. Last number: {config['last_num']}. Exception: {results}''')
                 return [[], None, None, None, None, None, num_class, True, f'Error: {results}']
             else:
                 return [pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
                     'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'
                     ]).to_dict('records'), None, None, None, None, None, num_class, False, message]
-    return data, ap, nom, ced, fnac, number, num_class, False, message
+    return [data, ap, nom, ced, fnac, number, num_class, False, message]
 
 
