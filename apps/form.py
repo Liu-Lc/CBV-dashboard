@@ -286,37 +286,39 @@ form =  html.Div(className='container', children=[
         ])
 
 form_modal = html.Div(children=[
-    dmc.Modal([
-        dmc.Title('Modificar Registro', order=3),
-        html.P(className='spacer'),
-        html.Div(className='modal-row', children=[
-            html.Span('No.', className='label'),
-            dcc.Input(className='input-style', id='modal-number', 
-                type='number', autoComplete='off'),
-        ]),
-        html.P('', className='spacer'),
-        html.Div(className='modal-row', children=[
-            html.Span('Apellidos', className='label'),
-            dcc.Input(className='input-style-m', id='modal-apellido', autoComplete='off'),
-        ]),
-        html.Div(className='modal-row', children=[
-            html.Span('Nombre', className='label'),
-            dcc.Input(className='input-style-m', id='modal-nombre', autoComplete='off'),
-        ]),
-        html.Div(className='modal-row', children=[
-            html.Span('Cédula', className='label'),
-            dcc.Input(className='input-style-m', id='modal-cedula', autoComplete='off'),
-        ]),
-        html.Div(className='modal-row', children=[
-            html.Span('Fecha de nacimiento', className='label'),
-            dmc.DatePicker(id='modal-fechanac', class_name='input-style',
-                        inputFormat='DD/MM/YYYY')
-        ]),
-        html.Div(className='button-container', children=[
-            html.Button('RESTAURAR', id='button-restaurar', className='large-button'),
-            html.Button('MODIFICAR', id='button-modificar', className='large-button'),
-        ])
-    ], id='modal', size='lg', centered=True, opened=False)
+        dmc.Modal([
+            dcc.Loading(id='loading-mod-modal', type='default', children=[
+                dmc.Title('Modificar Registro', order=3),
+                html.P(className='spacer'),
+                html.Div(className='modal-row', children=[
+                    html.Span('No.', className='label'),
+                    dcc.Input(className='input-style', id='modal-number', 
+                        type='number', autoComplete='off'),
+                ]),
+                html.P('', className='spacer'),
+                html.Div(className='modal-row', children=[
+                    html.Span('Apellidos', className='label'),
+                    dcc.Input(className='input-style-m', id='modal-apellido', autoComplete='off'),
+                ]),
+                html.Div(className='modal-row', children=[
+                    html.Span('Nombre', className='label'),
+                    dcc.Input(className='input-style-m', id='modal-nombre', autoComplete='off'),
+                ]),
+                html.Div(className='modal-row', children=[
+                    html.Span('Cédula', className='label'),
+                    dcc.Input(className='input-style-m', id='modal-cedula', autoComplete='off'),
+                ]),
+                html.Div(className='modal-row', children=[
+                    html.Span('Fecha de nacimiento', className='label'),
+                    dmc.DatePicker(id='modal-fechanac', class_name='input-style',
+                                inputFormat='DD/MM/YYYY')
+                ]),
+                html.Div(className='button-container', children=[
+                    html.Button('RESTAURAR', id='button-restaurar', className='large-button'),
+                    html.Button('MODIFICAR', id='button-modificar', className='large-button'),
+                ])
+            ])
+        ], id='modal', size='lg', centered=True, opened=False)
 ])
 
 error_modal = html.Div([
