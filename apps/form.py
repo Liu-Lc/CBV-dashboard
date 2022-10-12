@@ -393,6 +393,7 @@ form_add =  html.Div(className='container', children=[
                                 {'id':'fecha_nac', 'name':'F. Nac'},
                                 {'id':'number', 'name':'No.'},
                             ],
+                            sort_by=[{'column_id':'id', 'direction':'desc'}],
                             fixed_rows={'headers': True},
                             page_action='none',
                             page_size=150,
@@ -647,29 +648,9 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
 def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom, ced, fnac, number, num_class, message):
     config = json.load(open(config_file))
     triggered_id = ctx.triggered_id
-    if triggered_id=='check-id-button' and check_click!=None:
-        ### Check number id button if already exists
-        bol, results = fetch_sql(mysql.connector.connect(**keys.config),
-            f'SELECT NO FROM clinica WHERE NO={number}')
-        if bol and results==None:
-            return data, ap, nom, ced, fnac, number, 'input-style-s input-green', False, message
-        elif bol==False:
-            return data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error: {results}.'
-        else:
-            return data, ap, nom, ced, fnac, number, 'input-style-s input-red', False, message
-    elif triggered_id=='set-id-button' and set_click!=None:
-        ### Set id button generates a new number by adding 1 to the max number
-        bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
-                    f'SELECT MAX(NO) FROM clinica')
-        if bol and results==None:
-            return data, ap, nom, ced, fnac, '', num_class, False, message
-        elif bol==False:
-            return data, ap, nom, ced, fnac, '', num_class, True, f'Error: {results}.'
-        else:
-            return data, ap, nom, ced, fnac, results[0]+1, num_class, False, message
-    elif triggered_id=='button-agregar':
-        ### Pressing add button
-        # check if all fields are complete
+    modified = False
+    if triggered_id=='button-agregar':
+        ### Pressing add button. First check if all fields are complete
         if ( isempty(ap) or isempty(nom) or isempty(ced) or isempty(fnac) or isempty(number) ):
             # Returns True to displayed message for empty fields
             return data, ap, nom, ced, fnac, number, num_class, True, 'Faltan campos por rellenar.'
@@ -677,7 +658,7 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             # If the fields are complete, then add to database
             bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
                 f'''SELECT * FROM clinica WHERE (APELLIDO = UPPER('{ap}') AND NOMBRE = UPPER('{nom}') ) 
-                AND (CEDULA = UPPER('{ced}') AND CEDULA <> '') OR NO = {number};''')
+                OR (CEDULA = UPPER('{ced}') AND CEDULA <> '') OR NO = {number};''')
             if bol and results==None: # If the select statement returns None, means theres no similar record
                 # Can be added
                 try:
@@ -692,26 +673,30 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                             FECHA_NAC=fnac, NO=number)
                         if not result2: raise e
                     else: raise e
-                    results = [None, '', '', '', None, '', num_class, False, '']
+                    results = [None, '', '', '', None, '', 'input-style-s', False, '']
+                    ## If the record was added succesfully then the datatable has to be updated (jumps to second block)
+                    modified = True
                 except Exception as e:
-                    return [data, ap, nom, ced, fnac, number, num_class, True, f'Error has ocurred. {e}']
+                    logging.exception(f'''[Movements] Error adding record: {ap}, {nom} {ced} - {fnac} - {number}. Exception: {e}''')
+                    return [data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error. {e}']
             elif bol==False:
-                return data, ap, nom, ced, fnac, number, num_class, True, f'Error: {results}'
+                logging.exception(f'''[Clinica] Error fetching records to check add record. Exception: {results}''')
+                return data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error. {results}'
             else:
                 # Cannot be added because there's already a similar record
-                return [data, ap, nom, ced, fnac, number, num_class, True, 
+                return [data, ap, nom, ced, fnac, number, 'input-style-s', True, 
                 'Error. Existe un registro con el mismo número de cédula y/o expediente.']
-            ## If the record was added succesfully then the datatable has to be updated
-            try:
-                bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
-                    query=f'''SELECT * FROM movements WHERE No>{config['last_num']} AND TRANSACTION='ADD';''')
-                final_results = [pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 'apellido', 'nombre', 
-                    'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
-                    '', '', '', None, '', num_class, False, '']
-            except Exception as e:
-                print(f'Error updating data table. {e}')
-                return [data, ap, nom, ced, fnac, number, num_class, True, 'Error has ocurred.']
-            return final_results
+    ### Second block of conditions
+    if modified or (triggered_id=='tabs-main' and tab=='agregar'):
+        bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
+            query=f'''SELECT * FROM movements WHERE No>{config['last_num']} AND TRANSACTION='ADD';''')
+        if bol:
+            final_results = pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
+                'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'])
+            return [final_results.sort_values(by='id', ascending=False).to_dict('records'), '', '', None, None, None, 'input-style-s', False, message]
+        elif bol==False:
+            logging.exception(f'''Error getting last added records. Last number: {config['last_num']}. Exception: {results}''')
+            return [data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error: {results}']
     elif triggered_id=='button-limpiar2':
         bol, results = fetch_sql(mysql.connector.connect(**keys.config),
             f'''SELECT MAX(No) FROM movements WHERE TRANSACTION='ADD';''')
@@ -723,20 +708,29 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             logging.info(f'''Tab Add. Resetting last ID: {results[0]}.''')
         elif bol==False:
             logging.exception(f'''Error getting max ID. Last number: {config['last_num']}. Exception: {results}''')
-        return None, None, None, None, None, None, num_class, False, message
-    elif triggered_id=='tabs-main':
-        if tab=='agregar':
-            bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
-                query=f'''SELECT * FROM movements WHERE No>{config['last_num']} AND TRANSACTION='ADD';''')
-            if bol and results==None:
-                return [[], None, None, None, None, None, num_class, False, message]
-            elif bol==False:
-                logging.exception(f'''Error getting last added records. Last number: {config['last_num']}. Exception: {results}''')
-                return [[], None, None, None, None, None, num_class, True, f'Error: {results}']
-            else:
-                return [pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
-                    'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'
-                    ]).to_dict('records'), None, None, None, None, None, num_class, False, message]
-    return [data, ap, nom, ced, fnac, number, num_class, False, message]
+        return None, '', '', None, None, None, 'input-style-s', False, message
+    elif triggered_id=='check-id-button' and check_click!=None:
+        ### Check number id button if already exists
+        bol, results = fetch_sql(mysql.connector.connect(**keys.config),
+            f'SELECT NO FROM clinica WHERE NO={number}')
+        if bol:
+            return [data, ap, nom, ced, fnac, number, 
+                f'input-style-s {"input-green" if results==None else "input-red"}', 
+                False, message]
+        elif bol==False:
+            logging.exception(f'''[Clinica] Error fetching record {number}. Exception: {results}''')
+            return [data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error.']
+    elif triggered_id=='set-id-button' and set_click!=None:
+        ### Set id button generates a new number by adding 1 to the max number
+        bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
+                    f'SELECT MAX(NO) FROM clinica')
+        if bol and results==None:
+            return data, ap, nom, ced, fnac, '', 'input-style-s', False, message
+        elif bol==False:
+            logging.exception(f'''[Clinica] Error fetching max record. Exception: {results}''')
+            return data, ap, nom, ced, fnac, '', 'input-style-s', True, f'Error.'
+        else:
+            return data, ap, nom, ced, fnac, results[0]+1, 'input-style-s', False, message
+    return [data, ap, nom, ced, fnac, number, 'input-style-s', False, message]
 
 
