@@ -505,33 +505,30 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
                     'clinica', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
+                modify2, e = modify_sql(mysql.connector.connect(**keys.config),
+                    'movements', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
                 if modify: 
                     modified = True ## Record modified
+                    if modify2: logging.info(f'''[Movements] Record {cell['row_id']} succesfully modified.''')
+                    else: logging.error(f'''[Movements] Error updating record {cell['row_id']}.''')
                     data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                             'cedula', 'fecha_nac', 'number'])
                     row = data[data.id==cell['row_id']].squeeze()
-                    ## Add insert query with modified
+                    ## Adding insert query with modified into movements
                     time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     modify_mov, modify_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
                             ID=cell['row_id'], TRANSACTION='MODIFY', DATEADDED=time_now, 
                             APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
                             CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
-                    ## add log and not show message bc of extra action
                     if modify_mov: 
                         logging.info(f'''[Clinica] Record {cell['row_id']} succesfully modified.''')
-                        ## move this modify above insert and below first modify
-                        modify2, e = modify_sql(mysql.connector.connect(**keys.config),
-                            'movements', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
-                        if modify2: logging.info(f'''[Movements] Record {cell['row_id']} succesfully modified.''')
-                        else: logging.error(f'''[Movements] Error updating record {cell['row_id']}.''')
                     else: 
                         logging.exception(f'''[Movements] Error adding record {cell['row_id']}. Exception: {modify_e}''')
                     # In this step, the condition doesnt return thus jumps to search condition
                 else: 
                     logging.exception(f'''[Clinica] Error modifying record {cell['row_id']}.\nException: {e}''')
-                    return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
-                        f'Error modificando el registro.', None, None, None, None, None,
-                        False, '']
+                    return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True, f'Error modificando el registro.', 
+                        None, None, None, None, None, False, '']
             else: 
                 return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
                     f'Error. Ya existe un registro similar: \n{results}.', None, None, None, 
@@ -609,10 +606,14 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
         # Button from main tab that shows a message box (msg-eliminar)
         data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number'])
-        row = data[data.id==cell['row_id']].squeeze()
-        return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
-            None, None, True, 
-            f'Seguro desea eliminar el siguiente registro?\nNombre: {row.apellido}, {row.nombre}\nExpediente: {row.number}']
+        if cell['row_id'] in data.id.values:
+            row = data[data.id==cell['row_id']].squeeze()
+            return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
+                None, None, True, 
+                f'Seguro desea eliminar el siguiente registro?\nNombre: {row.apellido}, {row.nombre}\nExpediente: {row.number}']
+        else: return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
+                None, None, True, 
+                f'Error. Por favor vuelva a seleccionar otra casilla del registro.']
     return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', 
         None, None, None, None, None, False, '']
     ## datatable, ap1, ap2, nom, ced, fnac, modal open, error-modal open, error-modal-text, modal-number, modal-apellido, modal-nombre, modal-cedula, modal-fechanac
