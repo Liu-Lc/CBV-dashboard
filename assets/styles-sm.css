@@ -108,11 +108,11 @@
   }
 
   .one.column,
-  .one.columns                    { width: 100% !important;             }
+  .one.columns                    { width: 98% !important;             }
   .two.columns                    { width: 16.25%;         }
   .three.columns                  { width: 22%;            }
 
-  .one-third.column               { width: 100% !important; margin: 5px; }
+  .one-third.column               { width: 98% !important; margin: 5px; }
   .two-thirds.column              { width: 100% !important; margin: 5px; }
 
 }
