@@ -726,7 +726,6 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
                             FECHA_NAC=fnac, NO=number)
                         if not result2: raise e
                     else: raise e
-                    results = [None, '', '', '', None, '', 'input-style-s', False, '']
                     ## If the record was added succesfully then the datatable has to be updated (jumps to second block)
                     modified = True
                 except Exception as e:
@@ -742,6 +741,83 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
                 return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, 
                     'Error. Existe un registro con el mismo número de cédula y/o expediente.', 
                     False, None, None, None, None, None, False, None]
+    elif triggered_id=='button-modificar-mod':
+        ## Update table for modificar action
+        if ( isempty(m_ap) or isempty(m_nom) or isempty(m_ced) or isempty(m_fnac) or isempty(m_num) ):
+            # Show modal error
+            return [ add_data, ap, nom, ced, fnac, number, 'input-style-s', True,
+                'Error. Faltan campos por rellenar.', False, None, None, None, None, None,
+                False, None]
+        else:
+            ## Check if values are already in the database
+            bol, results = fetch_sql(mysql.connector.connect(**keys.config),
+                f'''SELECT * FROM clinica WHERE ID != {cell['row_id']}
+                    AND ( (APELLIDO = UPPER('{m_ap}') AND NOMBRE = UPPER('{m_nom}') ) 
+                        OR (CEDULA = UPPER('{m_ced}') AND CEDULA != '') OR NO = '{m_num}');''')
+            if bol and results==None:
+                ## Can be modified
+                modify, e = modify_sql(mysql.connector.connect(**keys.config),
+                    'clinica', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
+                        'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['row_id']} )
+                modify2, e = modify_sql(mysql.connector.connect(**keys.config),
+                    'movements', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
+                        'FECHA_NAC':m_fnac, 'NO':m_num}, 
+                    conditions={'ID':cell['row_id'], 'TRANSACTION':'ADD'} )
+                if modify: 
+                    modified = True ## Record modified
+                    if modify2: logging.info(f'''[Movements] Record {cell['row_id']} succesfully modified.''')
+                    else: logging.error(f'''[Movements] Error updating record {cell['row_id']}.''')
+                    data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
+                            'cedula', 'fecha_nac', 'number'])
+                    row = data[data.id==cell['row_id']].squeeze()
+                    ## Adding insert query with modified into movements
+                    time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    modify_mov, modify_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
+                            ID=cell['row_id'], TRANSACTION='MODIFY', DATEADDED=time_now, 
+                            APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
+                            CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
+                    if modify_mov: 
+                        logging.info(f'''[Clinica] Record {cell['row_id']} succesfully modified.''')
+                    else: 
+                        logging.exception(f'''[Movements] Error adding record {cell['row_id']}. Exception: {modify_e}''')
+                    # In this step, the condition doesnt return thus jumps to search condition
+                else: 
+                    logging.exception(f'''[Clinica] Error modifying record {cell['row_id']}.\nException: {e}''')
+                    
+                    return [ add_data, ap, nom, ced, fnac, number, 'input-style-s', True,
+                        f'Error modificando el registro.', 
+                        False, None, None, None, None, None, False, None]
+            else: 
+                return [ add_data, ap, nom, ced, fnac, number, 'input-style-s', True,
+                    f'Error. Ya existe un registro similar: \n{results}.', 
+                    False, None, None, None, None, None, False, None]
+    elif triggered_id=='msg-eliminar2':
+        data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
+                'cedula', 'fecha_nac', 'number'])
+        row = data[data.id==cell['row_id']].squeeze()
+        time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        add_del_mov, add_del_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
+                        ID=cell['row_id'], TRANSACTION='DELETE', DATEADDED=time_now, 
+                        APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
+                        CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
+        if add_del_mov: 
+            logging.info(f'''[Movements] Record {cell['row_id']} succesfully added.''')
+            # Delete from tables
+            delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['row_id'])
+            delete_mov2, delete_e2 = delete_sql(mysql.connector.connect(**keys.config), 
+                                        'movements', cell['row_id'], transaction=True)
+            if delete_mov: 
+                modified = True
+                logging.info(f'''[Clinica] Record {cell['row_id']} succesfully deleted.''')
+            else: 
+                logging.exception(f'''[Clinica] Error deleting record {cell['row_id']}. Exception: {delete_e}''')
+                return [ add_data, ap, nom, ced, fnac, number, 'input-style-s', True,
+                    f'Error eliminando el registro.', 
+                    False, None, None, None, None, None, False, None]
+            if not delete_mov2: 
+                logging.exception(f'''[Movements] Error deleting record {cell['row_id']}. Exception: {delete_e2}''')
+        else: logging.exception(f'''[Movements] Error adding record [{row}].\nException: {add_del_e}''')
+    
     ### Second block of conditions
     if modified or (triggered_id=='tabs-main' and tab=='agregar'):
         bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
@@ -769,7 +845,28 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
             logging.exception(f'''Error getting max ID. Last number: {config['last_num']}. Exception: {results}''')
         return [None, '', '', None, None, None, 'input-style-s', False, message, 
             False, None, None, None, None, None, False, None]
-    # elif triggered_id=='button-eliminar2':
+    elif triggered_id=='button-modificar2' or triggered_id=='button-restaurar-mod':
+        if cell!=None and len(add_data)>0:
+            data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
+                            'cedula', 'fecha_nac', 'number'])
+            row = data[data.id==cell['row_id']].squeeze()
+            # modal open return value depending on callback trigger
+            open_value = m_open if triggered_id=='button-restaurar-mod' else not m_open
+            # Shows the information from the selected row into the modal
+            return [ add_data, ap, nom, ced, fnac, number, 'input-style-s', False, '',  
+                open_value, row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac, False, '']
+    elif triggered_id=='button-eliminar2' and cell!=None and len(add_data)>0:
+        # Button from main tab that shows a message box (msg-eliminar)
+        data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
+                'cedula', 'fecha_nac', 'number'])
+        if cell['row_id'] in data.id.values:
+            row = data[data.id==cell['row_id']].squeeze()
+            return [add_data, ap, nom, ced, fnac, number, 'input-style-s', False, '', 
+                False, None, None, None, None, None, True, 
+                f'Seguro desea eliminar el siguiente registro?\nNombre: {row.apellido}, {row.nombre}\nExpediente: {row.number}']
+        else: return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, 
+            f'Error. Por favor vuelva a seleccionar otra casilla del mismo registro e intente nuevamente.', 
+            False, None, None, None, None, None, False, None]
     elif triggered_id=='check-id-button' and check_click!=None:
         ### Check number id button if already exists
         bol, results = fetch_sql(mysql.connector.connect(**keys.config),
