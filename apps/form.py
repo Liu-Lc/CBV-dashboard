@@ -151,26 +151,22 @@ def insert_sql(conn, table, **kwargs):
         cursor.close()
         conn.close()
 
-def modify_sql(conn, table, id, apellido, nombre, cedula, fecha, exp):
-    """ Executes update query on MySQL connection.
+def modify_sql(conn, table, values:dict, conditions:dict):
+    """ Executes update query on provided MySQL connection.
 
     Args:
         conn (mysql.connection): MySQL database connection
         table (string): table name
-        id (int or string): record id to modify
-        apellido (string): value
-        nombre (string): value
-        cedula (string): value
-        fecha (string or datetime): value
-        exp (int or string): value
+        values (dict): dictionary with the values to modify
+        conditions (dict): conditions of the value to modify
 
     Returns:
         array: returns array with True or False value and an empty string or exception description respectively.
-    """     
+    """
+    sets = ', '.join( [f'{key} = {repr(value)}' for key, value in values.items()]  )
+    where = ' AND '.join( [f'{key} = {repr(value)}' for key, value in conditions.items()]  )
     try:
-        update_query = f'''UPDATE {table} SET APELLIDO = UPPER('{apellido}'), 
-            NOMBRE = UPPER('{nombre}'), CEDULA = '{cedula}', FECHA_NAC = '{fecha}',
-            NO = {exp} WHERE ID = {id}; '''
+        update_query = f'''UPDATE {table} SET {sets} WHERE {where}; '''
         cursor = conn.cursor()
         cursor.execute(update_query)
         return [True, '']
@@ -445,8 +441,6 @@ tabs =  html.Div(className='column', children=[
         ])
 
 
-
-
 ## Callbacks / Actions / Updates ##
 
 ## App callback to bring results to table when pressing search button
@@ -505,9 +499,12 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
             if bol and results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
-                    'clinica', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
+                    'clinica', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
+                        'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['row_id']} )
                 modify2, e = modify_sql(mysql.connector.connect(**keys.config),
-                    'movements', cell['row_id'], m_ap, m_nom, m_ced, m_fnac, m_num)
+                    'movements', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
+                        'FECHA_NAC':m_fnac, 'NO':m_num}, 
+                    conditions={'ID':cell['row_id'], 'TRANSACTION':'ADD'} )
                 if modify: 
                     modified = True ## Record modified
                     if modify2: logging.info(f'''[Movements] Record {cell['row_id']} succesfully modified.''')
@@ -538,25 +535,27 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
         data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number'])
         row = data[data.id==cell['row_id']].squeeze()
-        delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['row_id'])
-        delete_mov2, delete_e2 = delete_sql(mysql.connector.connect(**keys.config), 
-                                    'movements', cell['row_id'], transaction=True)
-        if delete_mov: 
-            modified = True
-            logging.info(f'''[Clinica] Record {cell['row_id']} succesfully deleted.''')
-            time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            add_del_mov, add_del_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
-                            ID=cell['row_id'], TRANSACTION='DELETE', DATEADDED=time_now, 
-                            APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
-                            CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
-            if add_del_mov: logging.info(f'''[Movements] Record {cell['row_id']} succesfully added.''')
-            else: logging.exception(f'''[Movements] Error adding record [{row}].\nException: {add_del_e}''')
-        else: 
-            logging.exception(f'''[Clinica] Error deleting record {cell['row_id']}. Exception: {delete_e}''')
-            return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
-                f'Error eliminando el registro.', None, None, None, None, None, False, '']
-        if not delete_mov2: 
-            logging.exception(f'''[Movements] Error deleting record {cell['row_id']}. Exception: {delete_e2}''')
+        time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        add_del_mov, add_del_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
+                        ID=cell['row_id'], TRANSACTION='DELETE', DATEADDED=time_now, 
+                        APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
+                        CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
+        if add_del_mov: 
+            logging.info(f'''[Movements] Record {cell['row_id']} succesfully added.''')
+            # Delete from tables
+            delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['row_id'])
+            delete_mov2, delete_e2 = delete_sql(mysql.connector.connect(**keys.config), 
+                                        'movements', cell['row_id'], transaction=True)
+            if delete_mov: 
+                modified = True
+                logging.info(f'''[Clinica] Record {cell['row_id']} succesfully deleted.''')
+            else: 
+                logging.exception(f'''[Clinica] Error deleting record {cell['row_id']}. Exception: {delete_e}''')
+                return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+                    f'Error eliminando el registro.', None, None, None, None, None, False, '']
+            if not delete_mov2: 
+                logging.exception(f'''[Movements] Error deleting record {cell['row_id']}. Exception: {delete_e2}''')
+        else: logging.exception(f'''[Movements] Error adding record [{row}].\nException: {add_del_e}''')
 
     ### If its modified, then it will jump to this condition ###
     if triggered_id=='button-buscar' or modified:
