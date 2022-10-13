@@ -514,7 +514,7 @@ tabs =  html.Div(className='column', children=[
     # Datatable States
     State('table-buscar', 'data'), State('table-buscar', 'active_cell')]
 )
-def search_tab(search_click, clean_click, modify_click, form_open, restaurar, show_eliminar, eliminar, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
+def search_tab(search_click, clean_click, modify_click, modificar, restaurar, show_eliminar, eliminar, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
     triggered_id = ctx.triggered_id
     modified = False
     ## put modify first with a separate if and use variable to control context trigger
@@ -628,7 +628,7 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
     elif triggered_id=='button-limpiar1' or triggered_id==None:
         return [], '', '', '', '', '', False, False, '', None, None, None, None, None, False, ''
     elif triggered_id=='button-modificar1' or triggered_id=='button-restaurar':
-        if form_open and cell!=None and len(buscar_data)>0:
+        if cell!=None and len(buscar_data)>0:
             data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                             'cedula', 'fecha_nac', 'number'])
             row = data[data.id==cell['row_id']].squeeze()
