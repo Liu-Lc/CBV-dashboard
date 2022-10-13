@@ -13,6 +13,7 @@ from app import app, auth
 from apps import form, ver
 import mysql.connector
 from otros import keys
+from waitress import serve
 
 
 header = html.Div([
@@ -99,4 +100,4 @@ def change_url(pathname):
 
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', debug=True)
+    serve(app.server, host='0.0.0.0', port=8050)
