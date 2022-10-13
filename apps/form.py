@@ -317,6 +317,42 @@ form_modal = html.Div(children=[
         ], id='modal', size='lg', centered=True, opened=False)
 ])
 
+add_modal = html.Div(children=[
+        dmc.Modal([
+            dcc.Loading(id='loading-mod-modal2', type='default', children=[
+                dmc.Title('Modificar Registro', order=3),
+                html.P(className='spacer'),
+                html.Div(className='modal-row', children=[
+                    html.Span('No.', className='label'),
+                    dcc.Input(className='input-style', id='modal-number2', 
+                        type='number', autoComplete='off'),
+                ]),
+                html.P('', className='spacer'),
+                html.Div(className='modal-row', children=[
+                    html.Span('Apellidos', className='label'),
+                    dcc.Input(className='input-style-m', id='modal-apellido2', autoComplete='off'),
+                ]),
+                html.Div(className='modal-row', children=[
+                    html.Span('Nombre', className='label'),
+                    dcc.Input(className='input-style-m', id='modal-nombre2', autoComplete='off'),
+                ]),
+                html.Div(className='modal-row', children=[
+                    html.Span('Cédula', className='label'),
+                    dcc.Input(className='input-style-m', id='modal-cedula2', autoComplete='off'),
+                ]),
+                html.Div(className='modal-row', children=[
+                    html.Span('Fecha de nacimiento', className='label'),
+                    dmc.DatePicker(id='modal-fechanac2', class_name='input-style',
+                                inputFormat='DD/MM/YYYY')
+                ]),
+                html.Div(className='button-container', children=[
+                    html.Button('RESTAURAR', id='button-restaurar-mod', className='large-button'),
+                    html.Button('MODIFICAR', id='button-modificar-mod', className='large-button'),
+                ])
+            ])
+        ], id='modal2', size='lg', centered=True, opened=False)
+])
+
 error_modal = html.Div([
     dmc.Modal([
         dmc.Title('Error', order=3),
@@ -372,8 +408,8 @@ form_add =  html.Div(className='container', children=[
                         ]),
                         html.Div(className='row', children=[
                             dcc.ConfirmDialog(id='msg-eliminar2'),
-                            html.Button('MODIFICAR', id='button-modificar2', className='large-button', disabled=True),
-                            html.Button('ELIMINAR', id='button-eliminar2', className='large-button', disabled=True),
+                            html.Button('MODIFICAR', id='button-modificar2', className='large-button'),
+                            html.Button('ELIMINAR', id='button-eliminar2', className='large-button'),
                         ]),
                     ]),
                 ]),
@@ -436,8 +472,7 @@ tabs =  html.Div(className='column', children=[
                     ),
                 ]
             ),
-            form_modal,
-            error_modal
+            form_modal, add_modal, error_modal
         ])
 
 
@@ -627,24 +662,42 @@ def search_tab(search_click, clean_click, modify_click, form_open, restaurar, sh
     Output('a-cedula', 'value'), Output('a-fechanac', 'value'), 
     Output('a-number', 'value'), Output('a-number', 'className'), 
     # Message box
-    Output('msg-empty-fields', 'displayed'), Output('msg-empty-fields', 'message')],
+    Output('msg-empty-fields', 'displayed'), Output('msg-empty-fields', 'message'),
+    # Modify modal
+    Output('modal2', 'opened'),
+    # Modify modal fields
+    Output('modal-number2', 'value'), Output('modal-apellido2', 'value'), 
+    Output('modal-nombre2', 'value'), Output('modal-cedula2', 'value'), 
+    Output('modal-fechanac2', 'value'),
+    # Output for confirm dialog
+    Output('msg-eliminar2', 'displayed'), Output('msg-eliminar2', 'message')],
     ## INPUTS
     # Small buttons
     [Input('check-id-button', 'n_clicks'), Input('set-id-button', 'n_clicks'), 
     # Main buttons
     Input('button-agregar', 'n_clicks'), Input('button-limpiar2', 'n_clicks'),
+    Input('button-modificar2', 'n_clicks'), 
+    # Modal inputs
+    Input('button-modificar-mod', 'n_clicks'), Input('button-restaurar-mod', 'n_clicks'),
+    # Remove records
+    Input('button-eliminar2', 'n_clicks'), Input('msg-eliminar2', 'submit_n_clicks'),
     # Tab
     Input('tabs-main', 'value')],
     ## STATES
-    [State('table-agregar', 'data'), 
+    [State('table-agregar', 'data'), State('table-agregar', 'active_cell'),
     # Fields
     State('a-apellido', 'value'), State('a-nombre', 'value'), 
     State('a-cedula', 'value'), State('a-fechanac', 'value'), 
     State('a-number', 'value'), 
+    # Modal states
+    State('modal2', 'opened'), 
+    State('modal-apellido2', 'value'), State('modal-nombre2', 'value'), 
+    State('modal-cedula2', 'value'), State('modal-fechanac2', 'value'),
+    State('modal-number2', 'value'), 
     # Style and message
     State('a-number', 'className'), State('msg-empty-fields', 'message')]
 )
-def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom, ced, fnac, number, num_class, message):
+def add_tab(check_click, set_click, add_button, clear_button, modificar_button, mod_modificar, mod_restaurar, eliminar_button, msg_eliminar, tab, add_data, cell, ap, nom, ced, fnac, number, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, num_class, message):
     config = json.load(open(config_file))
     triggered_id = ctx.triggered_id
     modified = False
@@ -652,7 +705,8 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
         ### Pressing add button. First check if all fields are complete
         if ( isempty(ap) or isempty(nom) or isempty(ced) or isempty(fnac) or isempty(number) ):
             # Returns True to displayed message for empty fields
-            return data, ap, nom, ced, fnac, number, num_class, True, 'Faltan campos por rellenar.'
+            return [add_data, ap, nom, ced, fnac, number, num_class, True, 'Faltan campos por rellenar.', 
+                False, None, None, None, None, None, False, None]
         else:
             # If the fields are complete, then add to database
             bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
@@ -677,14 +731,17 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
                     modified = True
                 except Exception as e:
                     logging.exception(f'''[Movements] Error adding record: {ap}, {nom} {ced} - {fnac} - {number}. Exception: {e}''')
-                    return [data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error. {e}']
+                    return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error. {e}', 
+                        False, None, None, None, None, None, False, None]
             elif bol==False:
                 logging.exception(f'''[Clinica] Error fetching records to check add record. Exception: {results}''')
-                return data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error. {results}'
+                return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error. {results}', 
+                    False, None, None, None, None, None, False, None]
             else:
                 # Cannot be added because there's already a similar record
-                return [data, ap, nom, ced, fnac, number, 'input-style-s', True, 
-                'Error. Existe un registro con el mismo número de cédula y/o expediente.']
+                return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, 
+                    'Error. Existe un registro con el mismo número de cédula y/o expediente.', 
+                    False, None, None, None, None, None, False, None]
     ### Second block of conditions
     if modified or (triggered_id=='tabs-main' and tab=='agregar'):
         bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
@@ -692,10 +749,13 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
         if bol:
             final_results = pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
                 'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'])
-            return [final_results.sort_values(by='id', ascending=False).to_dict('records'), '', '', None, None, None, 'input-style-s', False, message]
+            return [final_results.sort_values(by='id', ascending=False).to_dict('records'), '', '', 
+                None, None, None, 'input-style-s', False, message,
+                False, None, None, None, None, None, False, None]
         elif bol==False:
             logging.exception(f'''Error getting last added records. Last number: {config['last_num']}. Exception: {results}''')
-            return [data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error: {results}']
+            return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error: {results}', 
+                False, None, None, None, None, None, False, None]
     elif triggered_id=='button-limpiar2':
         bol, results = fetch_sql(mysql.connector.connect(**keys.config),
             f'''SELECT MAX(No) FROM movements WHERE TRANSACTION='ADD';''')
@@ -707,29 +767,36 @@ def add_tab(check_click, set_click, add_button, clear_button, tab, data, ap, nom
             logging.info(f'''Tab Add. Resetting last ID: {results[0]}.''')
         elif bol==False:
             logging.exception(f'''Error getting max ID. Last number: {config['last_num']}. Exception: {results}''')
-        return None, '', '', None, None, None, 'input-style-s', False, message
+        return [None, '', '', None, None, None, 'input-style-s', False, message, 
+            False, None, None, None, None, None, False, None]
+    # elif triggered_id=='button-eliminar2':
     elif triggered_id=='check-id-button' and check_click!=None:
         ### Check number id button if already exists
         bol, results = fetch_sql(mysql.connector.connect(**keys.config),
             f'SELECT NO FROM clinica WHERE NO={number}')
         if bol:
-            return [data, ap, nom, ced, fnac, number, 
+            return [add_data, ap, nom, ced, fnac, number, 
                 f'input-style-s {"input-green" if results==None else "input-red"}', 
-                False, message]
+                False, message, False, None, None, None, None, None, False, None]
         elif bol==False:
             logging.exception(f'''[Clinica] Error fetching record {number}. Exception: {results}''')
-            return [data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error.']
+            return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error.', 
+                False, None, None, None, None, None, False, None]
     elif triggered_id=='set-id-button' and set_click!=None:
         ### Set id button generates a new number by adding 1 to the max number
         bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
                     f'SELECT MAX(NO) FROM clinica')
         if bol and results==None:
-            return data, ap, nom, ced, fnac, '', 'input-style-s', False, message
+            return [add_data, ap, nom, ced, fnac, '', 'input-style-s', False, message, 
+                False, None, None, None, None, None, False, None]
         elif bol==False:
             logging.exception(f'''[Clinica] Error fetching max record. Exception: {results}''')
-            return data, ap, nom, ced, fnac, '', 'input-style-s', True, f'Error.'
+            return [add_data, ap, nom, ced, fnac, '', 'input-style-s', True, f'Error.', 
+                False, None, None, None, None, None, False, None]
         else:
-            return data, ap, nom, ced, fnac, results[0]+1, 'input-style-s', False, message
-    return [data, ap, nom, ced, fnac, number, 'input-style-s', False, message]
+            return [add_data, ap, nom, ced, fnac, results[0]+1, 'input-style-s', False, message, 
+                False, None, None, None, None, None, False, None]
+    return [add_data, ap, nom, ced, fnac, number, 'input-style-s', False, message, 
+                False, None, None, None, None, None, False, None]
 
 
