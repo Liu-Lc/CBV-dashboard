@@ -137,8 +137,8 @@ def insert_sql(conn, table, **kwargs):
     Returns:
         array: returns boolean if succesfull, last row id if true and exception if false.
     """    
-    columns = ','.join(kwargs.keys())
-    values = ','.join(repr(x) for x in kwargs.values() )
+    columns = ', '.join(kwargs.keys())
+    values = ', '.join(repr(x) if x else 'NULL' for x in kwargs.values() )
     try:
         insert_query = f'''INSERT INTO {table} ({columns}) VALUES({values});'''
         cursor = conn.cursor(buffered=True)
