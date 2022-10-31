@@ -54,11 +54,8 @@ def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime):
     """    
     query = ''; proc = ''; args = ()
     ## Searching for any last name, first name, ID or birthdate.
-    if ( not isempty(ap1) or not isempty(ap2) or
-            not isempty(nom) and not isempty(ced) or 
-            not isempty(nom) and not isempty(ced) or 
-            not isempty(nom) and not isempty(ced) or 
-            not isempty(fnac) ):
+    if ( not isempty(ap1) or not isempty(ap2) or not isempty(ced)
+            or not isempty(ced) or not isempty(nom) or not isempty(fnac) ):
         ## Switching between search option selection
         if search_option=='ambigua':
             query = 'call'
