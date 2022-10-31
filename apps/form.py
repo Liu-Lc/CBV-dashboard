@@ -818,7 +818,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
     ### Second block of conditions
     if modified or (triggered_id=='tabs-main' and tab=='agregar'):
         bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
-            query=f'''SELECT * FROM movements WHERE No>{config['last_num']} AND TRANSACTION='ADD';''')
+            query=f'''SELECT * FROM movements WHERE ID>{config['last_num']} AND TRANSACTION='ADD';''')
         if bol:
             final_results = pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
                 'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'])
@@ -826,12 +826,12 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
                 None, None, None, 'input-style-s', False, message,
                 False, None, None, None, None, None, False, None]
         elif bol==False:
-            logging.exception(f'''Error getting last added records. Last number: {config['last_num']}. Exception: {results}''')
+            logging.exception(f'''Error getting last added records. Last ID: {config['last_num']}. Exception: {results}''')
             return [add_data, ap, nom, ced, fnac, number, 'input-style-s', True, f'Error: {results}', 
                 False, None, None, None, None, None, False, None]
     elif triggered_id=='button-limpiar2':
         bol, results = fetch_sql(mysql.connector.connect(**keys.config),
-            f'''SELECT MAX(No) FROM movements WHERE TRANSACTION='ADD';''')
+            f'''SELECT MAX(ID) FROM movements WHERE TRANSACTION='ADD';''')
         if bol:
             # Create dictionary variable with max number
             config = {'last_num':results[0]}
@@ -839,7 +839,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
             json.dump(config, open(config_file, 'w'))
             logging.info(f'''Tab Add. Resetting last ID: {results[0]}.''')
         elif bol==False:
-            logging.exception(f'''Error getting max ID. Last number: {config['last_num']}. Exception: {results}''')
+            logging.exception(f'''Error getting max ID. Last ID: {config['last_num']}. Exception: {results}''')
         return [None, '', '', None, None, None, 'input-style-s', False, message, 
             False, None, None, None, None, None, False, None]
     elif triggered_id=='button-modificar2' or triggered_id=='button-restaurar-mod':
