@@ -38,7 +38,7 @@ config_file = 'otros/config.json'
 def isempty(field):
     return (field=='' or field==None)
 
-def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime):
+def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime, num:int):
     """ Generates the query or procedure call command to search a record depending on the type of search option.
 
     Args:
@@ -48,6 +48,7 @@ def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime):
         nom (string): name
         ced (string): personal identification number
         fnac (datetime): birth date
+        num (int): record number
 
     Returns:
         array: array with query, procedure call and arguments variables.
@@ -55,7 +56,7 @@ def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime):
     query = ''; proc = ''; args = ()
     ## Searching for any last name, first name, ID or birthdate.
     if ( not isempty(ap1) or not isempty(ap2) or not isempty(ced)
-            or not isempty(ced) or not isempty(nom) or not isempty(fnac) ):
+            or not isempty(nom) or not isempty(fnac) or not isempty(num)):
         ## Switching between search option selection
         if search_option=='ambigua':
             query = 'call'
@@ -91,11 +92,12 @@ def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime):
             q = []
             q.append('select * from clinica ')
             # Appends sentence depending on fields with contents
-            if ap1!=None and ap1!='': q.append(f''' APELLIDO like '%{ap1}%' ''')
-            if ap2!=None and ap2!='': q.append(f''' APELLIDO like '%{ap2}%' ''')
-            if nom!=None and nom!='': q.append(f''' NOMBRE like '%{nom}%' ''')
-            if ced!=None and ced!='': q.append(f''' CEDULA like '%{ced}%' ''')
-            if fnac!=None and fnac!='': q.append(f''' FECHA_NAC like '%{fnac}%' ''')
+            if not isempty(ap1): q.append(f''' APELLIDO like '%{ap1}%' ''')
+            if not isempty(ap2): q.append(f''' APELLIDO like '%{ap2}%' ''')
+            if not isempty(nom): q.append(f''' NOMBRE like '%{nom}%' ''')
+            if not isempty(ced): q.append(f''' CEDULA like '%{ced}%' ''')
+            if not isempty(fnac): q.append(f''' FECHA_NAC='{fnac}' ''')
+            if not isempty(num): q.append(f''' NO={num} ''')
             query = q[0]
             if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
             query += '\norder by APELLIDO, NOMBRE; '
@@ -203,6 +205,10 @@ def delete_sql(conn, table, id:int, transaction:bool=False):
 form =  html.Div(className='container', children=[
             html.Div(className='one-third column', children=[
                 ## Starts the left panel with fields
+                html.Div(className='row', children=[
+                    html.Span('No.', className='label'),
+                    dcc.Input(id='f-number', type='number', className='input-style-s', autoComplete='off'),
+                ]),
                 html.Div(className='row', children=[
                     html.Span('Apellidos', className='label'),
                     html.Div(className='auto-column', children=[
@@ -481,7 +487,7 @@ tabs =  html.Div(className='column', children=[
     # Form fields
     Output('f-apellido1', 'value'), Output('f-apellido2', 'value'), 
     Output('f-nombre', 'value'), Output('f-cedula', 'value'), 
-    Output('f-fechanac', 'value'),
+    Output('f-fechanac', 'value'), Output('f-number', 'value'),
     # Modify modal
     Output('modal', 'opened'), 
     # Error modal
@@ -503,6 +509,7 @@ tabs =  html.Div(className='column', children=[
     [State('search-option', 'value'), State('f-apellido1', 'value'),
     State('f-apellido2', 'value'), State('f-nombre', 'value'), 
     State('f-cedula', 'value'), State('f-fechanac', 'value'),
+    State('f-number', 'value'),
     # Modal states
     State('modal', 'opened'), 
     State('modal-apellido', 'value'), State('modal-nombre', 'value'), 
@@ -511,7 +518,7 @@ tabs =  html.Div(className='column', children=[
     # Datatable States
     State('table-buscar', 'data'), State('table-buscar', 'active_cell')]
 )
-def search_tab(search_click, clean_click, modify_click, modificar, restaurar, show_eliminar, eliminar, search_option, ap1, ap2, nom, ced, fnac, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
+def search_tab(search_click, clean_click, modify_click, modificar, restaurar, show_eliminar, eliminar, search_option, ap1, ap2, nom, ced, fnac, num, m_open, m_ap, m_nom, m_ced, m_fnac, m_num, buscar_data, cell):
     triggered_id = ctx.triggered_id
     modified = False
     ## put modify first with a separate if and use variable to control context trigger
@@ -519,7 +526,7 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
         ## Update table for modificar action
         if ( isempty(m_ap) or isempty(m_nom) or isempty(m_ced) or isempty(m_fnac) or isempty(m_num) ):
             # Show modal error
-            return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+            return [ buscar_data, ap1, ap2, nom, ced, fnac, num, m_open, True,
                 'Error. Faltan campos por rellenar.', None, None, None, None, None,
                 False, '']
         else:
@@ -557,10 +564,10 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
                     # In this step, the condition doesnt return thus jumps to search condition
                 else: 
                     logging.exception(f'''[Clinica] Error modifying record {cell['row_id']}.\nException: {e}''')
-                    return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True, f'Error modificando el registro.', 
+                    return [ buscar_data, ap1, ap2, nom, ced, fnac, num, m_open, True, f'Error modificando el registro.', 
                         None, None, None, None, None, False, '']
             else: 
-                return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+                return [ buscar_data, ap1, ap2, nom, ced, fnac, num, m_open, True,
                     f'Error. Ya existe un registro similar: \n{results}.', None, None, None, 
                     None, None, False, '']
     elif triggered_id=='msg-eliminar':
@@ -583,7 +590,7 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
                 logging.info(f'''[Clinica] Record {cell['row_id']} succesfully deleted.''')
             else: 
                 logging.exception(f'''[Clinica] Error deleting record {cell['row_id']}. Exception: {delete_e}''')
-                return [ buscar_data, ap1, ap2, nom, ced, fnac, m_open, True,
+                return [ buscar_data, ap1, ap2, nom, ced, fnac, num, m_open, True,
                     f'Error eliminando el registro.', None, None, None, None, None, False, '']
             if not delete_mov2: 
                 logging.exception(f'''[Movements] Error deleting record {cell['row_id']}. Exception: {delete_e2}''')
@@ -594,7 +601,7 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
         # Generate query or procedure call
-        query, proc, args = generate_search_query(search_option, ap1, ap2, nom, ced, fnac)
+        query, proc, args = generate_search_query(search_option, ap1, ap2, nom, ced, fnac, num)
         # After creating the query, cursor is created
         if query!='':
             cursor = conn.cursor()
@@ -610,20 +617,20 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
                 ## Returns results in a dataframe to output object that is the DataTable
                 return [pd.DataFrame(results, columns=['id', 'apellido', 'nombre', 
                     'cedula', 'fecha_nac', 'direccion', 'number']).to_dict('records'), 
-                    ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, None, None,
+                    ap1, ap2, nom, ced, fnac, num, False, False, '', None, None, None, None, None,
                     False, '']
             except Exception as e:
                 logging.exception(f'''Error searching record. Exception: {e}''')
                 error_text = f'Error: {e}'
-                return [[], ap1, ap2, nom, ced, fnac, False, True, error_text, None, None, None, 
+                return [[], ap1, ap2, nom, ced, fnac, num, False, True, error_text, None, None, None, 
                 None, None, False, '']
             finally:
                 cursor.close()
                 conn.close()
-        else: return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
+        else: return [buscar_data, ap1, ap2, nom, ced, fnac, num, False, False, '', None, None, None, 
             None, None, False, '']
     elif triggered_id=='button-limpiar1' or triggered_id==None:
-        return [], '', '', '', '', '', False, False, '', None, None, None, None, None, False, ''
+        return [], '', '', '', '', '', '', False, False, '', None, None, None, None, None, False, ''
     elif triggered_id=='button-modificar1' or triggered_id=='button-restaurar':
         if cell!=None and len(buscar_data)>0:
             data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
@@ -632,7 +639,7 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
             # modal open return value depending on callback trigger
             open_value = m_open if triggered_id=='button-restaurar' else not m_open
             # Shows the information from the selected row into the modal
-            return [buscar_data, ap1, ap2, nom, ced, fnac, open_value, False, '',  
+            return [buscar_data, ap1, ap2, nom, ced, fnac, num, open_value, False, '',  
                 row.number, row.apellido, row.nombre, row.cedula, row.fecha_nac, False, '']
     elif triggered_id=='button-eliminar1' and cell!=None and len(buscar_data)>0:
         # Button from main tab that shows a message box (msg-eliminar)
@@ -640,13 +647,13 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
                 'cedula', 'fecha_nac', 'number'])
         if cell['row_id'] in data.id.values:
             row = data[data.id==cell['row_id']].squeeze()
-            return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
+            return [buscar_data, ap1, ap2, nom, ced, fnac, num, False, False, '', None, None, None, 
                 None, None, True, 
                 f'Seguro desea eliminar el siguiente registro?\nNombre: {row.apellido}, {row.nombre}\nExpediente: {row.number}']
-        else: return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', None, None, None, 
+        else: return [buscar_data, ap1, ap2, nom, ced, fnac, num, False, False, '', None, None, None, 
                 None, None, True, 
                 f'Error. Por favor vuelva a seleccionar otra casilla del registro.']
-    return [buscar_data, ap1, ap2, nom, ced, fnac, False, False, '', 
+    return [buscar_data, ap1, ap2, nom, ced, fnac, num, False, False, '', 
         None, None, None, None, None, False, '']
     ## datatable, ap1, ap2, nom, ced, fnac, modal open, error-modal open, error-modal-text, modal-number, modal-apellido, modal-nombre, modal-cedula, modal-fechanac
 
