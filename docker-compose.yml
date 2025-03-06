@@ -1,0 +1,33 @@
+services:
+  app:
+    build:
+        context: .
+        dockerfile: Dockerfile
+    container_name: app
+    restart: always
+    volumes:
+      - /home/CBV-dashboard:/cbv-data
+    working_dir: /cbv-data
+    expose:
+      - "80"
+    networks:
+      - my_network
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-container
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/nginx/certs
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - app
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
