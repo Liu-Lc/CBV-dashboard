@@ -7,9 +7,5 @@ Created on Sunday, July 4, 2021, 18:34
 """
 
 import dash
-import dash_auth
-from otros.users import USERNAME_PASSWORD_PAIRS
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
-
-auth = dash_auth.BasicAuth(app, USERNAME_PASSWORD_PAIRS)

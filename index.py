@@ -9,7 +9,7 @@ Created on Sunday, July 4, 2021, 19:39
 
 from dash import dcc, html, callback_context as ctx
 from dash.dependencies import Input, Output, State
-from app import app, auth
+from app import app #, auth
 from apps import form, ver
 import mysql.connector
 from otros import keys
@@ -100,4 +100,4 @@ def change_url(pathname):
 
 
 if __name__ == '__main__':
-    serve(app.server, host='0.0.0.0', port=8050)
+    serve(app.server, host='0.0.0.0', port=80)
