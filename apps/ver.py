@@ -117,32 +117,31 @@ def display_options(tab):
 )
 def display_results(option, tab):
     results = []; query = ''
+
+    valid_options = {
+        'apnomced-dup': ('APELLIDO, NOMBRE, CEDULA', ['APELLIDO', 'NOMBRE', 'CEDULA']),
+        'apnom-dup': ('APELLIDO, NOMBRE', ['APELLIDO', 'NOMBRE']),
+        'ced-dup': ('CEDULA', ['CEDULA']),
+        'exp-dup': ('NO', ['NO']),
+    }
+
     conn = mysql.connector.connect(**keys.config)
     cursor = conn.cursor()
     if tab=='todos':
         query = '''select * from clinica order by ID desc; '''
     elif tab=='vacios' and option!=None:
-        query = '''select * from clinica where %s = '' 
-                    order by APELLIDO, NOMBRE; ''' % option
-    elif tab=='duplicados' and option!=None:
-        query = '''select * from clinica
-            where concat({0}) in
-                (select concat({0}) from clinica
-                    group by {0} having {1}) {2}
-            order by {0} {3};'''
-        if option=='apnomced-dup':
-            query = query.format('APELLIDO, NOMBRE, CEDULA', 
-                'AND '.join(f'count({i})>1 '
-                    for i in ['APELLIDO', 'NOMBRE', 'CEDULA']), '', 'asc')
-        elif option=='apnom-dup':
-            query = query.format('APELLIDO, NOMBRE', 
-                'AND '.join(f'count({i})>1 ' 
-                    for i in ['APELLIDO', 'NOMBRE']), '',  'asc')
-        elif option=='ced-dup':
-            query = query.format('CEDULA', 'count(CEDULA)>1', 
-                "AND CEDULA!='' ",  'asc')
-        elif option=='exp-dup':
-            query = query.format('NO', 'count(NO)>1 ', '',  'desc')
+        query = '''select * from clinica where {} = '' 
+                    order by APELLIDO, NOMBRE; '''.format(option)
+    elif tab=='duplicados' and option in valid_options:
+        columns, count_conditions = valid_options[option]
+        having_clause = ' AND '.join(f'count({col})>1' for col in count_conditions)
+        query = f'''SELECT * FROM clinica 
+                WHERE concat({columns}) IN 
+                    (SELECT concat({columns}) FROM clinica 
+                     GROUP BY {columns} HAVING {having_clause}) 
+                ORDER BY {columns} ASC;'''
+    else:
+        return []
     try:
         cursor.execute(query)
         results = cursor.fetchall()
