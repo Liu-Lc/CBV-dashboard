@@ -36,7 +36,7 @@ config_file = 'otros/config.json'
 
 
 def isempty(field):
-    return (field=='' or field==None)
+    return field in (None, '')
 
 def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime, num:int):
     """ Generates the query or procedure call command to search a record depending on the type of search option.
@@ -53,62 +53,67 @@ def generate_search_query(search_option:str, ap1, ap2, nom, ced, fnac:datetime, 
     Returns:
         array: array with query, procedure call and arguments variables.
     """    
-    query = ''; proc = ''; args = ()
+    query = ''; proc = ''; args = (); params = []
     ## Searching for any last name, first name, ID or birthdate.
-    if ( not isempty(ap1) or not isempty(ap2) or not isempty(ced)
-            or not isempty(nom) or not isempty(fnac) or not isempty(num)):
+    if any([not isempty(ap1), not isempty(ap2), not isempty(ced), 
+            not isempty(nom), not isempty(fnac), not isempty(num)]):
         ## Switching between search option selection
         if search_option=='ambigua':
-            query = 'call'
-            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
-                proc = 'B_1AP'; args = (ap1, )
-            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
-                proc = 'B_2AP'; args = (ap1, ap2)
-            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
-                proc = 'B_NOMAP1'; args = (ap1, nom)
-            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 2 nombre
-                proc = 'B_NOMAP2'; args = (ap1, ap2, nom)
-            elif not isempty(ced): ## cedula
-                proc = 'B_CED'; args = (ced, )
-            elif not isempty(fnac): ## fecha
-                proc = 'B_FECHA'; args = (fnac, )
-            else: pass
-        elif search_option=='precisa':
-            query = 'call'
-            if not isempty(ap1) and isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 1
-                proc = 'BUSCAR1AP'; args = (ap1, )
-            elif not isempty(ap1) and not isempty(ap2) and isempty(nom) and isempty(ced): ## apellido 2
-                proc = 'BUSCAR2AP'; args = (ap1, ap2)
-            elif not isempty(ap1) and isempty(ap2) and not isempty(nom) and isempty(ced): ## apellido 1 nombre
-                proc = 'BUSCARNOMAP1'; args = (ap1, nom)
-            elif not isempty(ap1) and not isempty(ap2) and not isempty(nom) and isempty(ced):  ## apellido 2 nombre
-                proc = 'BUSCARNOMAP2'; args = (ap1, ap2, nom)
-            elif not isempty(ced): ## cedula
-                proc = 'BUSCARCED'; args = (ced, )
-            elif not isempty(fnac): ## fecha
-                proc = 'BUSCARFECHA'; args = (fnac, )
-            else: pass
-        elif search_option=='exacta':
-            q = []
-            q.append('select * from clinica ')
-            # Appends sentence depending on fields with contents
-            if not isempty(ap1): q.append(f''' APELLIDO like '%{ap1}%' ''')
-            if not isempty(ap2): q.append(f''' APELLIDO like '%{ap2}%' ''')
-            if not isempty(nom): q.append(f''' NOMBRE like '%{nom}%' ''')
-            if not isempty(ced): q.append(f''' CEDULA like '%{ced}%' ''')
-            if not isempty(fnac): q.append(f''' FECHA_NAC='{fnac}' ''')
-            if not isempty(num): q.append(f''' NO={num} ''')
-            query = q[0]
-            if len(q)>0: query += '\nwhere' + '\nAND'.join(q[1:])
-            query += '\norder by APELLIDO, NOMBRE; '
-    return query, proc, args
+            proc_map = {
+                (True, False, False, False): ('B_1AP', (ap1,)),
+                (True, True, False, False): ('B_2AP', (ap1, ap2)),
+                (True, False, True, False): ('B_NOMAP1', (ap1, nom)),
+                (True, True, True, False): ('B_NOMAP2', (ap1, ap2, nom)),
+                (False, False, False, True): ('B_CED', (ced,)),
+                (False, False, False, False): ('B_FECHA', (fnac,))
+            }
+            proc, args = proc_map.get((not isempty(ap1), not isempty(ap2), not isempty(nom), not isempty(ced)), ('', ()))
+            query = 'CALL ' + proc if proc else ''
 
-def fetch_sql(conn, query, fetch=1, buffer=True):
+        elif search_option=='precisa':
+            proc_map = {
+                (True, False, False, False): ('BUSCAR1AP', (ap1,)),
+                (True, True, False, False): ('BUSCAR2AP', (ap1, ap2)),
+                (True, False, True, False): ('BUSCARNOMAP1', (ap1, nom)),
+                (True, True, True, False): ('BUSCARNOMAP2', (ap1, ap2, nom)),
+                (False, False, False, True): ('BUSCARCED', (ced,)),
+                (False, False, False, False): ('BUSCARFECHA', (fnac,))
+            }
+            proc, args = proc_map.get((not isempty(ap1), not isempty(ap2), not isempty(nom), not isempty(ced)), ('', ()))
+            query = 'CALL ' + proc if proc else ''
+
+        elif search_option=='exacta':
+            q = ['SELECT * FROM clinica WHERE 1=1']
+            params = []
+            # Appends sentence depending on fields with contents
+            if not isempty(ap1): 
+                q.append("AND APELLIDO LIKE %s")
+                params.append(f"%{ap1}%")
+            if not isempty(ap2): 
+                q.append("AND APELLIDO LIKE %s")
+                params.append(f"%{ap2}%")
+            if not isempty(nom): 
+                q.append("AND NOMBRE LIKE %s")
+                params.append(f"%{nom}%")
+            if not isempty(ced): 
+                q.append("AND CEDULA LIKE %s")
+                params.append(f"%{ced}%")
+            if not isempty(fnac): 
+                q.append("AND FECHA_NAC = %s")
+                params.append(fnac)
+            if not isempty(num): 
+                q.append("AND NO = %s")
+                params.append(num)
+            
+            query = " ".join(q) + " ORDER BY APELLIDO, NOMBRE;"
+
+    return query, proc, args, params
+
+def fetch_sql(conn, query, params=(), fetch=1, buffer=True):
     try:
         cursor = conn.cursor(buffered=buffer)
-        cursor.execute(query)
-        if fetch==1: results = cursor.fetchone()
-        else: results = cursor.fetchall()
+        cursor.execute(query, params)
+        results = cursor.fetchone() if fetch == 1 else cursor.fetchall()
         return True, results
     except Exception as e:
         return False, e
@@ -137,12 +142,13 @@ def insert_sql(conn, table, **kwargs):
         array: returns boolean if succesfull, last row id if true and exception if false.
     """    
     columns = ', '.join(kwargs.keys())
-    values = ', '.join(repr(x) if x else 'NULL' for x in kwargs.values() )
+    placeholders = ', '.join(['%s'] * len(kwargs))
+    values = tuple(kwargs.values())
+    query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
     try:
-        insert_query = f'''INSERT INTO {table} ({columns}) VALUES({values});'''
-        cursor = conn.cursor(buffered=True)
-        cursor.execute(insert_query)
-        return [True, cursor.lastrowid]
+        cursor = conn.cursor()
+        cursor.execute(query, values)
+        return True, cursor.lastrowid
     except Exception as e:
         return [False, e]
     finally:
@@ -162,12 +168,15 @@ def modify_sql(conn, table, values:dict, conditions:dict):
     Returns:
         array: returns array with True or False value and an empty string or exception description respectively.
     """
-    sets = ', '.join( [f'{key} = {repr(value)}' for key, value in values.items()]  )
-    where = ' AND '.join( [f'{key} = {repr(value)}' for key, value in conditions.items()]  )
+    set_clause = ', '.join(f"{col} = %s" for col in values.keys())
+    where_clause = ' AND '.join(f"{col} = %s" for col in conditions.keys())
+    params = tuple(values.values()) + tuple(conditions.values())
+
+    query = f"UPDATE {table} SET {set_clause} WHERE {where_clause}"
+
     try:
-        update_query = f'''UPDATE {table} SET {sets} WHERE {where}; '''
         cursor = conn.cursor()
-        cursor.execute(update_query)
+        cursor.execute(query, params)
         return [True, '']
     except Exception as e:
         return [False, e]
@@ -176,7 +185,7 @@ def modify_sql(conn, table, values:dict, conditions:dict):
         cursor.close()
         conn.close()
 
-def delete_sql(conn, table, id:int, transaction:bool=False):
+def delete_sql(conn, table, record_id:int, transaction:bool=False):
     """ Executes delete statement on MySQL connection provided.
 
     Args:
@@ -186,12 +195,13 @@ def delete_sql(conn, table, id:int, transaction:bool=False):
 
     Returns:
         array: True of False if the statement executed. If false, additionally returns exception.
-    """    
+    """
+    query = "DELETE FROM " + table + " WHERE ID = %s"
+    if transaction:
+        query += " AND TRANSACTION='ADD'"
     try:
-        delete_query = f'''DELETE FROM {table} WHERE ID = {id} 
-            {"AND TRANSACTION='ADD'" if transaction else ''}; '''
         cursor = conn.cursor()
-        cursor.execute(delete_query)
+        cursor.execute(query, (record_id,))
         return [True, '']
     except Exception as e:
         return [False, e]
@@ -532,9 +542,10 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
         else:
             ## Check if values are already in the database
             bol, results = fetch_sql(mysql.connector.connect(**keys.config),
-                f'''SELECT * FROM clinica WHERE ID != {cell['row_id']}
-                    AND ( (APELLIDO = UPPER('{m_ap}') AND NOMBRE = UPPER('{m_nom}') ) 
-                        OR (CEDULA = UPPER('{m_ced}') AND CEDULA != '') OR NO = '{m_num}');''')
+                '''SELECT * FROM clinica WHERE ID != %s
+                    AND ( (APELLIDO = UPPER(%s) AND NOMBRE = UPPER(%s) ) 
+                        OR (CEDULA = UPPER(%s) AND CEDULA != '') OR NO = %s);''',
+                        (cell['row_id'], m_ap, m_nom, m_ced, m_num))
             if bol and results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
@@ -601,14 +612,14 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
         # mysql connection
         conn = mysql.connector.connect(**keys.config)
         # Generate query or procedure call
-        query, proc, args = generate_search_query(search_option, ap1, ap2, nom, ced, fnac, num)
+        query, proc, args, params = generate_search_query(search_option, ap1, ap2, nom, ced, fnac, num)
         # After creating the query, cursor is created
         if query!='':
             cursor = conn.cursor()
             # Executes query or procedure depending of search option
             try:
                 if search_option=='exacta':
-                    cursor.execute(query)
+                    cursor.execute(query, params)
                     results = cursor.fetchall()
                 else:
                     cursor.callproc(proc, args)
@@ -714,8 +725,9 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
         else:
             # If the fields are complete, then add to database
             bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
-                f'''SELECT * FROM clinica WHERE (APELLIDO = UPPER('{ap}') AND NOMBRE = UPPER('{nom}') ) 
-                OR (CEDULA = UPPER('{ced}') AND CEDULA <> '') OR NO = {number};''')
+                '''SELECT * FROM clinica WHERE (APELLIDO = UPPER(%s) AND NOMBRE = UPPER(%s) ) 
+                OR (CEDULA = UPPER(%s) AND CEDULA <> '') OR NO = %s;''',
+                (ap))
             if bol and results==None: # If the select statement returns None, means theres no similar record
                 # Can be added
                 try:
@@ -755,9 +767,10 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
         else:
             ## Check if values are already in the database
             bol, results = fetch_sql(mysql.connector.connect(**keys.config),
-                f'''SELECT * FROM clinica WHERE ID != {cell['row_id']}
-                    AND ( (APELLIDO = UPPER('{m_ap}') AND NOMBRE = UPPER('{m_nom}') ) 
-                        OR (CEDULA = UPPER('{m_ced}') AND CEDULA != '') OR NO = '{m_num}');''')
+                '''SELECT * FROM clinica WHERE ID != %s
+                    AND ( (APELLIDO = UPPER(%s) AND NOMBRE = UPPER(%s) ) 
+                        OR (CEDULA = UPPER(%s) AND CEDULA != '') OR NO = %s);''',
+                        (cell['row_id'], m_ap, m_nom, m_ced, m_num))
             if bol and results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
@@ -824,8 +837,9 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
     
     ### Second block of conditions
     if modified or (triggered_id=='tabs-main' and tab=='agregar'):
-        bol, results = fetch_sql(mysql.connector.connect(**keys.config), fetch=2,
-            query=f'''SELECT * FROM movements WHERE ID>{config['last_num']} AND TRANSACTION='ADD';''')
+        bol, results = fetch_sql(mysql.connector.connect(**keys.config),
+            query='''SELECT * FROM movements WHERE ID>%s AND TRANSACTION='ADD';''',
+            params=(config['last_num'],), fetch=2)
         if bol:
             final_results = pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
                 'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'])
@@ -838,7 +852,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
                 False, None, None, None, None, None, False, None]
     elif triggered_id=='button-limpiar2':
         bol, results = fetch_sql(mysql.connector.connect(**keys.config),
-            f'''SELECT MAX(ID) FROM movements WHERE TRANSACTION='ADD';''')
+            '''SELECT MAX(ID) FROM movements WHERE TRANSACTION='ADD';''')
         if bol:
             # Create dictionary variable with max number
             config = {'last_num':results[0]}
@@ -874,7 +888,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
     elif triggered_id=='check-id-button' and check_click!=None:
         ### Check number id button if already exists
         bol, results = fetch_sql(mysql.connector.connect(**keys.config),
-            f'SELECT NO FROM clinica WHERE NO={number}')
+            'SELECT NO FROM clinica WHERE NO=%s', (number,))
         if bol:
             return [add_data, ap, nom, ced, fnac, number, 
                 f'input-style-s {"input-green" if results==None else "input-red"}', 
@@ -886,7 +900,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
     elif triggered_id=='set-id-button' and set_click!=None:
         ### Set id button generates a new number by adding 1 to the max number
         bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
-                    f'SELECT MAX(NO) FROM clinica')
+                    'SELECT MAX(NO) FROM clinica')
         if bol and results==None:
             return [add_data, ap, nom, ced, fnac, '', 'input-style-s', False, message, 
                 False, None, None, None, None, None, False, None]
