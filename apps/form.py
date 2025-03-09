@@ -727,7 +727,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
             bol, results = fetch_sql(mysql.connector.connect(**keys.config), 
                 '''SELECT * FROM clinica WHERE (APELLIDO = UPPER(%s) AND NOMBRE = UPPER(%s) ) 
                 OR (CEDULA = UPPER(%s) AND CEDULA <> '') OR NO = %s;''',
-                (ap))
+                (ap, nom, ced, number))
             if bol and results==None: # If the select statement returns None, means theres no similar record
                 # Can be added
                 try:
