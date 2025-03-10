@@ -11,6 +11,7 @@ from dash import dcc, html, dash_table as table, callback_context as ctx
 import dash_mantine_components as dmc
 import mysql.connector
 import pandas as pd
+import numpy as np
 import os, sys, logging, datetime, json
 from app import app
 from dash.dependencies import Input, Output, State
@@ -141,6 +142,12 @@ def insert_sql(conn, table, **kwargs):
     Returns:
         array: returns boolean if succesfull, last row id if true and exception if false.
     """    
+    # Convert numpy types to native Python types
+    for key, value in kwargs.items():
+        if isinstance(value, (np.integer, np.floating)):  # Catches numpy int64, int32, float64, etc.
+            kwargs[key] = value.item()  # Converts to int or float
+        elif isinstance(value, np.ndarray):  # Handles numpy arrays if present
+            kwargs[key] = value.tolist()
     columns = ', '.join(kwargs.keys())
     placeholders = ', '.join(['%s'] * len(kwargs))
     values = tuple(kwargs.values())
@@ -545,36 +552,36 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
                 '''SELECT * FROM clinica WHERE ID != %s
                     AND ( (APELLIDO = UPPER(%s) AND NOMBRE = UPPER(%s) ) 
                         OR (CEDULA = UPPER(%s) AND CEDULA != '') OR NO = %s);''',
-                        (cell['id'], m_ap, m_nom, m_ced, m_num))
+                        (cell['row_id'], m_ap, m_nom, m_ced, m_num))
             if bol and results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
                     'clinica', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
-                        'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['id']} )
+                        'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['row_id']} )
                 modify2, e = modify_sql(mysql.connector.connect(**keys.config),
                     'movements', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
                         'FECHA_NAC':m_fnac, 'NO':m_num}, 
-                    conditions={'ID':cell['id'], 'TRANSACTION':'ADD'} )
+                    conditions={'ID':cell['row_id'], 'TRANSACTION':'ADD'} )
                 if modify: 
                     modified = True ## Record modified
-                    if modify2: logging.info(f'''[Movements] Record {cell['id']} succesfully modified.''')
-                    else: logging.error(f'''[Movements] Error updating record {cell['id']}.''')
+                    if modify2: logging.info(f'''[Movements] Record {cell['row_id']} succesfully modified.''')
+                    else: logging.error(f'''[Movements] Error updating record {cell['row_id']}.''')
                     data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                             'cedula', 'fecha_nac', 'number'])
-                    row = data[data.id==cell['id']].squeeze()
+                    row = data[data.id==cell['row_id']].squeeze()
                     ## Adding insert query with modified into movements
                     time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     modify_mov, modify_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
-                            ID=cell['id'], TRANSACTION='MODIFY', DATEADDED=time_now, 
+                            ID=cell['row_id'], TRANSACTION='MODIFY', DATEADDED=time_now, 
                             APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
                             CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
                     if modify_mov: 
-                        logging.info(f'''[Clinica] Record {cell['id']} succesfully modified.''')
+                        logging.info(f'''[Clinica] Record {cell['row_id']} succesfully modified.''')
                     else: 
-                        logging.exception(f'''[Movements] Error adding record {cell['id']}. Exception: {modify_e}''')
+                        logging.exception(f'''[Movements] Error adding record {cell['row_id']}. Exception: {modify_e}''')
                     # In this step, the condition doesnt return thus jumps to search condition
                 else: 
-                    logging.exception(f'''[Clinica] Error modifying record {cell['id']}.\nException: {e}''')
+                    logging.exception(f'''[Clinica] Error modifying record {cell['row_id']}.\nException: {e}''')
                     return [ buscar_data, ap1, ap2, nom, ced, fnac, num, m_open, True, f'Error modificando el registro.', 
                         None, None, None, None, None, False, '']
             else: 
@@ -584,27 +591,27 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
     elif triggered_id=='msg-eliminar':
         data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number'])
-        row = data[data.id==cell['id']].squeeze()
+        row = data[data.id==cell['row_id']].squeeze()
         time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         add_del_mov, add_del_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
-                        ID=cell['id'], TRANSACTION='DELETE', DATEADDED=time_now, 
+                        ID=cell['row_id'], TRANSACTION='DELETE', DATEADDED=time_now, 
                         APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
                         CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
         if add_del_mov: 
-            logging.info(f'''[Movements] Record {cell['id']} succesfully added.''')
+            logging.info(f'''[Movements] Record {cell['row_id']} succesfully added.''')
             # Delete from tables
-            delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['id'])
+            delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['row_id'])
             delete_mov2, delete_e2 = delete_sql(mysql.connector.connect(**keys.config), 
-                                        'movements', cell['id'], transaction=True)
+                                        'movements', cell['row_id'], transaction=True)
             if delete_mov: 
                 modified = True
-                logging.info(f'''[Clinica] Record {cell['id']} succesfully deleted.''')
+                logging.info(f'''[Clinica] Record {cell['row_id']} succesfully deleted.''')
             else: 
-                logging.exception(f'''[Clinica] Error deleting record {cell['id']}. Exception: {delete_e}''')
+                logging.exception(f'''[Clinica] Error deleting record {cell['row_id']}. Exception: {delete_e}''')
                 return [ buscar_data, ap1, ap2, nom, ced, fnac, num, m_open, True,
                     f'Error eliminando el registro.', None, None, None, None, None, False, '']
             if not delete_mov2: 
-                logging.exception(f'''[Movements] Error deleting record {cell['id']}. Exception: {delete_e2}''')
+                logging.exception(f'''[Movements] Error deleting record {cell['row_id']}. Exception: {delete_e2}''')
         else: logging.exception(f'''[Movements] Error adding record [{row}].\nException: {add_del_e}''')
 
     ### If its modified, then it will jump to this condition ###
@@ -646,7 +653,7 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
         if cell!=None and len(buscar_data)>0:
             data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                             'cedula', 'fecha_nac', 'number'])
-            row = data[data.id==cell['id']].squeeze()
+            row = data[data.id==cell['row_id']].squeeze()
             # modal open return value depending on callback trigger
             open_value = m_open if triggered_id=='button-restaurar' else not m_open
             # Shows the information from the selected row into the modal
@@ -656,8 +663,8 @@ def search_tab(search_click, clean_click, modify_click, modificar, restaurar, sh
         # Button from main tab that shows a message box (msg-eliminar)
         data = pd.DataFrame(buscar_data, columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number'])
-        if cell['id'] in data.id.values:
-            row = data[data.id==cell['id']].squeeze()
+        if cell['row_id'] in data.id.values:
+            row = data[data.id==cell['row_id']].squeeze()
             return [buscar_data, ap1, ap2, nom, ced, fnac, num, False, False, '', None, None, None, 
                 None, None, True, 
                 f'Seguro desea eliminar el siguiente registro?\nNombre: {row.apellido}, {row.nombre}\nExpediente: {row.number}']
@@ -770,36 +777,36 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
                 '''SELECT * FROM clinica WHERE ID != %s
                     AND ( (APELLIDO = UPPER(%s) AND NOMBRE = UPPER(%s) ) 
                         OR (CEDULA = UPPER(%s) AND CEDULA != '') OR NO = %s);''',
-                        (cell['id'], m_ap, m_nom, m_ced, m_num))
+                        (cell['row_id'], m_ap, m_nom, m_ced, m_num))
             if bol and results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
                     'clinica', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
-                        'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['id']} )
+                        'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['row_id']} )
                 modify2, e = modify_sql(mysql.connector.connect(**keys.config),
                     'movements', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
                         'FECHA_NAC':m_fnac, 'NO':m_num}, 
-                    conditions={'ID':cell['id'], 'TRANSACTION':'ADD'} )
+                    conditions={'ID':cell['row_id'], 'TRANSACTION':'ADD'} )
                 if modify: 
                     modified = True ## Record modified
-                    if modify2: logging.info(f'''[Movements] Record {cell['id']} succesfully modified.''')
-                    else: logging.error(f'''[Movements] Error updating record {cell['id']}.''')
+                    if modify2: logging.info(f'''[Movements] Record {cell['row_id']} succesfully modified.''')
+                    else: logging.error(f'''[Movements] Error updating record {cell['row_id']}.''')
                     data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
                             'cedula', 'fecha_nac', 'number'])
-                    row = data[data.id==cell['id']].squeeze()
+                    row = data[data.id==cell['row_id']].squeeze()
                     ## Adding insert query with modified into movements
                     time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     modify_mov, modify_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
-                            ID=cell['id'], TRANSACTION='MODIFY', DATEADDED=time_now, 
+                            ID=cell['row_id'], TRANSACTION='MODIFY', DATEADDED=time_now, 
                             APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
                             CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
                     if modify_mov: 
-                        logging.info(f'''[Clinica] Record {cell['id']} succesfully modified.''')
+                        logging.info(f'''[Clinica] Record {cell['row_id']} succesfully modified.''')
                     else: 
-                        logging.exception(f'''[Movements] Error adding record {cell['id']}. Exception: {modify_e}''')
+                        logging.exception(f'''[Movements] Error adding record {cell['row_id']}. Exception: {modify_e}''')
                     # In this step, the condition doesnt return thus jumps to search condition
                 else: 
-                    logging.exception(f'''[Clinica] Error modifying record {cell['id']}.\nException: {e}''')
+                    logging.exception(f'''[Clinica] Error modifying record {cell['row_id']}.\nException: {e}''')
                     
                     return [ add_data, ap, nom, ced, fnac, number, 'input-style-s', True,
                         f'Error modificando el registro.', 
@@ -811,28 +818,28 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
     elif triggered_id=='msg-eliminar2':
         data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number'])
-        row = data[data.id==cell['id']].squeeze()
+        row = data[data.id==cell['row_id']].squeeze()
         time_now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         add_del_mov, add_del_e = insert_sql(mysql.connector.connect(**keys.config), 'movements',
-                        ID=cell['id'], TRANSACTION='DELETE', DATEADDED=time_now, 
+                        ID=cell['row_id'], TRANSACTION='DELETE', DATEADDED=time_now, 
                         APELLIDO=row.apellido.upper(), NOMBRE=row.nombre.upper(), 
                         CEDULA=row.cedula.upper(), FECHA_NAC=row.fecha_nac, NO=row.number)
         if add_del_mov: 
-            logging.info(f'''[Movements] Record {cell['id']} succesfully added.''')
+            logging.info(f'''[Movements] Record {cell['row_id']} succesfully added.''')
             # Delete from tables
-            delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['id'])
+            delete_mov, delete_e = delete_sql(mysql.connector.connect(**keys.config), 'clinica', cell['row_id'])
             delete_mov2, delete_e2 = delete_sql(mysql.connector.connect(**keys.config), 
-                                        'movements', cell['id'], transaction=True)
+                                        'movements', cell['row_id'], transaction=True)
             if delete_mov: 
                 modified = True
-                logging.info(f'''[Clinica] Record {cell['id']} succesfully deleted.''')
+                logging.info(f'''[Clinica] Record {cell['row_id']} succesfully deleted.''')
             else: 
-                logging.exception(f'''[Clinica] Error deleting record {cell['id']}. Exception: {delete_e}''')
+                logging.exception(f'''[Clinica] Error deleting record {cell['row_id']}. Exception: {delete_e}''')
                 return [ add_data, ap, nom, ced, fnac, number, 'input-style-s', True,
                     f'Error eliminando el registro.', 
                     False, None, None, None, None, None, False, None]
             if not delete_mov2: 
-                logging.exception(f'''[Movements] Error deleting record {cell['id']}. Exception: {delete_e2}''')
+                logging.exception(f'''[Movements] Error deleting record {cell['row_id']}. Exception: {delete_e2}''')
         else: logging.exception(f'''[Movements] Error adding record [{row}].\nException: {add_del_e}''')
     
     ### Second block of conditions
@@ -867,7 +874,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
         if cell!=None and len(add_data)>0:
             data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
                             'cedula', 'fecha_nac', 'number'])
-            row = data[data.id==cell['id']].squeeze()
+            row = data[data.id==cell['row_id']].squeeze()
             # modal open return value depending on callback trigger
             open_value = m_open if triggered_id=='button-restaurar-mod' else not m_open
             # Shows the information from the selected row into the modal
@@ -877,8 +884,8 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
         # Button from main tab that shows a message box (msg-eliminar)
         data = pd.DataFrame(add_data, columns=['id', 'apellido', 'nombre', 
                 'cedula', 'fecha_nac', 'number'])
-        if cell['id'] in data.id.values:
-            row = data[data.id==cell['id']].squeeze()
+        if cell['row_id'] in data.id.values:
+            row = data[data.id==cell['row_id']].squeeze()
             return [add_data, ap, nom, ced, fnac, number, 'input-style-s', False, '', 
                 False, None, None, None, None, None, True, 
                 f'Seguro desea eliminar el siguiente registro?\nNombre: {row.apellido}, {row.nombre}\nExpediente: {row.number}']
