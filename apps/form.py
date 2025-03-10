@@ -781,11 +781,11 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
             if bol and results==None:
                 ## Can be modified
                 modify, e = modify_sql(mysql.connector.connect(**keys.config),
-                    'clinica', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
-                        'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['row_id']} )
+                    'clinica', values={'APELLIDO':str(m_ap).upper(), 'NOMBRE':str(m_nom).upper(),  
+                        'CEDULA':str(m_ced).upper(),'FECHA_NAC':m_fnac, 'NO':m_num}, conditions={'ID':cell['row_id']} )
                 modify2, e = modify_sql(mysql.connector.connect(**keys.config),
-                    'movements', values={'APELLIDO':m_ap, 'NOMBRE':m_nom, 'CEDULA':m_ced, 
-                        'FECHA_NAC':m_fnac, 'NO':m_num}, 
+                    'movements', values={'APELLIDO':str(m_ap).upper(), 'NOMBRE':str(m_nom).upper(),  
+                        'CEDULA':str(m_ced).upper(), 'FECHA_NAC':m_fnac, 'NO':m_num}, 
                     conditions={'ID':cell['row_id'], 'TRANSACTION':'ADD'} )
                 if modify: 
                     modified = True ## Record modified
@@ -851,7 +851,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
             final_results = pd.DataFrame(results, columns=['id', 'transaction', 'dateadded', 
                 'apellido', 'nombre', 'cedula', 'fecha_nac', 'direccion', 'number'])
             return [final_results.sort_values(by='id', ascending=False).to_dict('records'), '', '', 
-                None, None, None, 'input-style-s', False, message,
+                '', None, None, 'input-style-s', False, message,
                 False, None, None, None, None, None, False, None]
         elif bol==False:
             logging.exception(f'''Error getting last added records. Last ID: {config['last_num']}. Exception: {results}''')
@@ -868,7 +868,7 @@ def add_tab(check_click, set_click, add_button, clear_button, modificar_button, 
             logging.info(f'''Tab Add. Resetting last ID: {results[0]}.''')
         elif bol==False:
             logging.exception(f'''Error getting max ID. Last ID: {config['last_num']}. Exception: {results}''')
-        return [None, '', '', None, None, None, 'input-style-s', False, message, 
+        return [None, '', '', '', None, None, 'input-style-s', False, message, 
             False, None, None, None, None, None, False, None]
     elif triggered_id=='button-modificar2' or triggered_id=='button-restaurar-mod':
         if cell!=None and len(add_data)>0:
